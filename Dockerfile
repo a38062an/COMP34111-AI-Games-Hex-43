@@ -1,7 +1,7 @@
 FROM nvidia/cuda:12.3.0-runtime-ubuntu22.04
 
 ENV HOME="/home/hex"
-ARG UID
+ARG UID=1000
 RUN useradd -u $UID --create-home hex
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -14,6 +14,7 @@ RUN apt-get update && apt-get install -y software-properties-common && \
     add-apt-repository ppa:deadsnakes/ppa && \
     apt-get update && \
     apt-get install -y \
+    build-essential \
     python3.11 \
     python3.11-distutils \
     python3.11-venv \
