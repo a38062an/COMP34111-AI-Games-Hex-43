@@ -2,6 +2,7 @@
 #define MCTS_H
 
 #include <vector>
+#include <cstdint>
 #include <cmath>
 #include <limits>
 #include <memory>
@@ -61,20 +62,34 @@ private:
     Node* expand(Node* node, Bitboard& board);
 
     /**
+     * @brief Result of a simulation.
+     */
+    /**
+     * @brief Result of a simulation.
+     */
+    struct SimulationResult 
+    {
+        char winner;
+        Bitboard redMoves;
+        Bitboard blueMoves;
+    };
+
+    /**
      * @brief Simulation Phase: Play a random game to completion.
      * 
      * @param board The board state to simulate from.
      * @param turnColour The player whose turn it is to move next.
-     * @return char The winner ('R' or 'B').
+     * @return SimulationResult The winner and the moves played.
      */
-    char simulate(Bitboard board, char turnColour);
+    SimulationResult simulate(Bitboard board, char turnColour);
 
     /**
      * @brief Backpropagation Phase: Update stats up the tree.
      * 
      * Updates visit counts and win counts for all nodes from the leaf to the root.
+     * Also updates RAVE statistics.
      */
-    void backpropagate(Node* node, char winner);
+    void backpropagate(Node* node, const SimulationResult& result);
     
     /**
      * @brief Helper to get the opponent's colour.
@@ -83,6 +98,37 @@ private:
     {
         return (colour == 'R') ? 'B' : 'R';
     }
+
+private:
+    /**
+     * @brief Fast Xorshift Random Number Generator.
+     */
+    struct FastRNG 
+    {
+        uint32_t state;
+        
+        FastRNG(uint32_t seed = 123456789) : state(seed) 
+        {
+            if (state == 0) state = 123456789;
+        }
+
+        uint32_t next() 
+        {
+            uint32_t x = state;
+            x ^= x << 13;
+            x ^= x >> 17;
+            x ^= x << 5;
+            return state = x;
+        }
+        
+        // Returns random number in [0, max-1]
+        uint32_t range(uint32_t max) 
+        {
+            return next() % max;
+        }
+    };
+
+    FastRNG rng;
 };
 
 #endif

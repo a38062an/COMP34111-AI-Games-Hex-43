@@ -1,8 +1,10 @@
 #ifndef NODE_H
 #define NODE_H
 
-#include <vector>
 #include <memory>
+#include <vector>
+#include <cstdint>
+
 #include <cmath>
 #include <limits>
 #include <algorithm>
@@ -15,13 +17,16 @@ using namespace std;
  */
 struct Node 
 {
-    int x, y;           ///< The move coordinates that led to this state (-1, -1 for root)
-    char colour;        ///< The player who made the move at (x, y)
+    int moveColumn;     ///< The move column that led to this state (-1 for root)
+    int moveRow;        ///< The move row that led to this state (-1 for root)
+    char colour;        ///< The player who made the move at (moveColumn, moveRow)
     int visits;         ///< Number of times this node has been visited
+    double raveWins;    ///< Number of RAVE wins (AMAF)
+    int raveVisits;     ///< Number of RAVE visits (AMAF)
     double wins;        ///< Number of wins for the player at this node
-    vector<unique_ptr<Node>> children; ///< Child nodes
+    vector<unique_ptr<Node>> children; ///< Child nodes (managed by pool)
     Node* parent;       ///< Pointer to parent node (nullptr for root)
-    vector<pair<int, int>> untriedMoves; ///< List of legal moves not yet expanded
+    vector<int16_t> untriedMoves; ///< List of legal moves not yet expanded (indices 0-120)
 
     /**
      * @brief Construct a new Node.
@@ -29,29 +34,31 @@ struct Node
      * Automatically calculates all legal moves from the given board state
      * and populates `untriedMoves`.
      * 
-     * @param moveX Column of the move
-     * @param moveY Row of the move
+     * @param column Column of the move
+     * @param row Row of the move
      * @param moveColour Player who made the move
      * @param parentNode Pointer to parent
      * @param board Current board state
      */
-    Node(int moveX, int moveY, char moveColour, Node* parentNode, const Bitboard& board)
-        : x{moveX}
-        , y{moveY}
+    Node(int column, int row, char moveColour, Node* parentNode, const Bitboard& board)
+        : moveColumn{column}
+        , moveRow{row}
         , colour{moveColour}
         , visits{0}
+        , raveWins{0.0}
+        , raveVisits{0}
         , wins{0.0}
         , parent{parentNode}
     {
         // Populate untried moves
-        for (int row = 0; row < BOARD_SIZE; ++row) 
+        // We iterate 0..120 and check if occupied
+        for (int i = 0; i < NUM_TILES; ++i) 
         {
-            for (int column = 0; column < BOARD_SIZE; ++column) 
+            int c = i % BOARD_SIZE;
+            int r = i / BOARD_SIZE;
+            if (!board.isOccupied(c, r)) 
             {
-                if (!board.isOccupied(column, row)) 
-                {
-                    untriedMoves.push_back({column, row});
-                }
+                untriedMoves.push_back(static_cast<int16_t>(i));
             }
         }
     }
@@ -68,27 +75,64 @@ struct Node
     }
 
     /**
-     * @brief Select the best child using the UCT formula.
+     * @brief Select the best child using the RAVE formula (UCT + AMAF).
      * 
-     * UCT = (wins / visits) + c * sqrt(log(parent_visits) / visits)
+     * Score = (1 - beta) * UCT + beta * RAVE
+     * beta = sqrt(k / (3 * visits + k))
      * 
      * @param explorationConstant The 'c' parameter in UCT (default 1.414).
+     * @param raveConstant The 'k' parameter in RAVE (default 1000).
      * @return Node* Pointer to the best child.
      */
-    Node* bestChild(double explorationConstant = 1.414) 
+    Node* bestChild(double explorationConstant = 1.414, double raveConstant = 1000.0) 
     {
         Node* best = nullptr;
         double bestValue = -numeric_limits<double>::infinity();
 
-        for (const auto& child : children) 
+        for (const auto& childPtr : children) 
         {
-            double uctValue = (child->wins / child->visits) + 
-                              explorationConstant * sqrt(log(visits) / child->visits);
-            
-            if (uctValue > bestValue) 
+            Node* child = childPtr.get();
+            // UCT Part
+            double uctValue = 0.0;
+            if (child->visits > 0) 
             {
-                bestValue = uctValue;
-                best = child.get();
+                uctValue = (child->wins / child->visits) + 
+                           explorationConstant * sqrt(log(visits) / child->visits);
+            } 
+            else 
+            {
+                uctValue = 1e6 + (rand() % 100); 
+            }
+
+            // RAVE Part
+            double raveValue = 0.0;
+            if (child->raveVisits > 0) 
+            {
+                raveValue = child->raveWins / child->raveVisits;
+            }
+
+            // Beta Calculation
+            double beta = sqrt(raveConstant / (3 * visits + raveConstant));
+            
+            // Combined Score
+            double score;
+            if (child->visits == 0) 
+            {
+                score = 1e6 + (rand() % 100); // Prioritize unvisited children
+                if (child->raveVisits > 0) 
+                {
+                    score += raveValue;
+                }
+            } 
+            else 
+            {
+                score = (1.0 - beta) * uctValue + beta * raveValue;
+            }
+            
+            if (score > bestValue) 
+            {
+                bestValue = score;
+                best = child;
             }
         }
         return best;

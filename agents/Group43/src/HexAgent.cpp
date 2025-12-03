@@ -40,6 +40,12 @@ void HexAgent::run()
         parseBoard(boardString);
         printBoard();
 
+        if (command == "SWAP") 
+        {
+            myColour = (myColour == 'R') ? 'B' : 'R';
+            cerr << "Agent swapped colour to: " << myColour << endl;
+        }
+
         // Decide move
         Point point = makeMove();
         
@@ -86,7 +92,7 @@ Point HexAgent::makeMove()
     // TODO: Dynamic time management based on remaining time
     
     MCTS mcts(bitboard, myColour);
-    pair<int, int> bestMove = mcts.runSearch(5000);
+    pair<int, int> bestMove = mcts.runSearch(1000);
 
     if (bestMove.first != -1) 
     {

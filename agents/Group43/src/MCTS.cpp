@@ -12,14 +12,16 @@ pair<int, int> MCTS::runSearch(int timeLimitMs)
     // 
     // We pass nullptr as parent.
     // Coordinates -1, -1 indicate root.
-    unique_ptr<Node> root = make_unique<Node>(-1, -1, getOpponent(myColour), nullptr, rootBoard);
-
+    auto root = make_unique<Node>(-1, -1, getOpponent(myColour), nullptr, rootBoard);
 
     while (true) 
     {
         auto currentTime = chrono::high_resolution_clock::now();
         auto elapsed = chrono::duration_cast<chrono::milliseconds>(currentTime - startTime).count();
-        if (elapsed >= timeLimitMs) break;
+        if (elapsed >= timeLimitMs) 
+        {
+            break;
+        }
 
         Bitboard simulationBoard = rootBoard;
         
@@ -36,30 +38,29 @@ pair<int, int> MCTS::runSearch(int timeLimitMs)
         // Determine whose turn it is for simulation
         // If leaf->colour is Red, next turn is Blue.
         char nextTurn = getOpponent(leaf->colour);
-        char winner = simulate(simulationBoard, nextTurn);
+        SimulationResult result = simulate(simulationBoard, nextTurn);
 
         // 4. Backpropagation
-        backpropagate(leaf, winner);
-
-
+        backpropagate(leaf, result);
     }
 
     // Return best move (child with most visits)
     Node* bestChild = nullptr;
     int maxVisits = -1;
 
-    for (const auto& child : root->children) 
+    for (const auto& childPtr : root->children) 
     {
+        Node* child = childPtr.get();
         if (child->visits > maxVisits) 
         {
             maxVisits = child->visits;
-            bestChild = child.get();
+            bestChild = child;
         }
     }
 
     if (bestChild) 
     {
-        return {bestChild->x, bestChild->y};
+        return {bestChild->moveColumn, bestChild->moveRow};
     }
     
     // Fallback if no search happened (should not happen)
@@ -71,19 +72,23 @@ Node* MCTS::select(Node* node, Bitboard& board)
     while (node->isFullyExpanded() && !node->children.empty()) 
     {
         node = node->bestChild();
-        board.set(node->x, node->y, node->colour);
+        board.set(node->moveColumn, node->moveRow, node->colour);
     }
     return node;
 }
 
 Node* MCTS::expand(Node* node, Bitboard& board) 
 {
-    if (node->untriedMoves.empty()) return node;
+    if (node->untriedMoves.empty()) 
+    {
+        return node;
+    }
 
     // 1. Pick a random move that we haven't explored yet from this state.
     // 'untriedMoves' holds all valid moves from this node that don't have a child node yet.
-    int index = rand() % node->untriedMoves.size();
-    pair<int, int> chosenMove = node->untriedMoves[index];
+    // Use FastRNG
+    int index = rng.range(node->untriedMoves.size());
+    int16_t moveIndex = node->untriedMoves[index];
     
     // 2. Remove this move from 'untriedMoves' so we don't expand it again later.
     // We swap with the back and pop to do this efficiently in O(1).
@@ -95,65 +100,123 @@ Node* MCTS::expand(Node* node, Bitboard& board)
     // So the move we just picked is made by the *current* player (opponent of node->colour).
     char childColour = getOpponent(node->colour);
     
+    // Convert index back to col/row
+    int col = moveIndex % BOARD_SIZE;
+    int row = moveIndex / BOARD_SIZE;
+
     // 4. Update the board state with this new move.
-    board.set(chosenMove.first, chosenMove.second, childColour);
+    board.set(col, row, childColour);
     
     // 5. Create a new child node representing this new board state.
-    // The child node will automatically calculate its own 'untriedMoves' (legal moves) in its constructor.
-    auto child = make_unique<Node>(chosenMove.first, chosenMove.second, childColour, node, board);
+    auto child = make_unique<Node>(col, row, childColour, node, board);
+    Node* childPtr = child.get();
 
     // 6. Add this new child to the current node's list of children.
-    // We use std::move because 'child' is a unique_ptr and ownership is being transferred to the vector.
     node->children.push_back(std::move(child));
     
     // 7. Return the raw pointer to the newly created child so we can run a simulation from it.
-    return node->children.back().get();
+    return childPtr;
 }
 
-char MCTS::simulate(Bitboard board, char turnColour) 
+MCTS::SimulationResult MCTS::simulate(Bitboard board, char turnColour) 
 {
+    SimulationResult result;
+    
+    // Optimized Simulation: Avoid vector allocation
+    // We use a fixed array of indices 0..120 and shuffle it
+    int moves[NUM_TILES];
+    int movesCount = 0;
+    
+    // Populate valid moves
+    for (int i = 0; i < NUM_TILES; ++i) 
+    {
+        int col = i % BOARD_SIZE;
+        int row = i / BOARD_SIZE;
+        if (!board.isOccupied(col, row)) 
+        {
+            moves[movesCount++] = i;
+        }
+    }
+    
     // Random rollout
     while (true) 
     {
-        if (board.checkWinRed()) return 'R';
-        if (board.checkWinBlue()) return 'B';
-
-        // Find all empty spots
-        vector<pair<int, int>> emptySpots;
-        for (int row = 0; row < BOARD_SIZE; ++row) 
+        if (board.checkWinRed()) 
         {
-            for (int column = 0; column < BOARD_SIZE; ++column) 
-            {
-                if (!board.isOccupied(column, row)) 
-                {
-                    emptySpots.push_back({column, row});
-                }
-            }
+            result.winner = 'R';
+            return result;
+        }
+        if (board.checkWinBlue()) 
+        {
+            result.winner = 'B';
+            return result;
         }
 
-        if (emptySpots.empty()) break; // Draw edge case (should never happen)
+        if (movesCount == 0) 
+        {
+            break; // Draw edge case
+        }
 
-        // Pick random
-        int index = rand() % emptySpots.size();
-        board.set(emptySpots[index].first, emptySpots[index].second, turnColour);
+        // Pick random move using FastRNG
+        // Swap-remove strategy
+        int index = rng.range(movesCount); 
+        int moveIndex = moves[index];
+        
+        // Remove selected move by swapping with the last available move
+        moves[index] = moves[--movesCount];
+        
+        int col = moveIndex % BOARD_SIZE;
+        int row = moveIndex / BOARD_SIZE;
+        
+        board.set(col, row, turnColour);
+        
+        if (turnColour == 'R') 
+        {
+            result.redMoves.set(col, row, 'R');
+        } 
+        else 
+        {
+            result.blueMoves.set(col, row, 'B');
+        }
         
         turnColour = getOpponent(turnColour);
     }
-    return '0';
+    result.winner = '0';
+    return result;
 }
 
-void MCTS::backpropagate(Node* node, char winner) 
+void MCTS::backpropagate(Node* node, const SimulationResult& result) 
 {
     // Walk up the tree from the leaf node to the root.
     while (node != nullptr) 
     {
         node->visits++;
         
-        // If the player who just moved at this node eventually won the game,
-        // we increment their win count.
-        if (node->colour == winner) 
+        // UCT Update
+        if (node->colour == result.winner) 
         {
             node->wins++;
+        }
+        
+        // RAVE Update
+        // Iterate over all children of the current node to update their AMAF stats
+        // RAVE Update
+        // Iterate over all children of the current node to update their AMAF stats
+        char childColour = getOpponent(node->colour);
+        const Bitboard& movesToCheck = (childColour == 'R') ? result.redMoves : result.blueMoves;
+        
+        for (const auto& childPtr : node->children) 
+        {
+            Node* child = childPtr.get();
+            // Check if child's move appears in the simulation (O(1) check)
+            if (movesToCheck.isOccupied(child->moveColumn, child->moveRow)) 
+            {
+                child->raveVisits++;
+                if (childColour == result.winner) 
+                {
+                    child->raveWins++;
+                }
+            }
         }
         
         // Move up to the parent
