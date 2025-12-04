@@ -24,7 +24,7 @@ struct Node
     double raveWins;    ///< Number of RAVE wins (AMAF)
     int raveVisits;     ///< Number of RAVE visits (AMAF)
     double wins;        ///< Number of wins for the player at this node
-    vector<unique_ptr<Node>> children; ///< Child nodes (managed by pool)
+    vector<Node*> children; ///< Child nodes (managed by pool)
     Node* parent;       ///< Pointer to parent node (nullptr for root)
     vector<int16_t> untriedMoves; ///< List of legal moves not yet expanded (indices 0-120)
 
@@ -40,7 +40,22 @@ struct Node
      * @param parentNode Pointer to parent
      * @param board Current board state
      */
-    Node(int column, int row, char moveColour, Node* parentNode, const Bitboard& board)
+    uint64_t hash;      ///< Zobrist hash of the board state at this node
+
+    /**
+     * @brief Construct a new Node.
+     * 
+     * Automatically calculates all legal moves from the given board state
+     * and populates `untriedMoves`.
+     * 
+     * @param column Column of the move
+     * @param row Row of the move
+     * @param moveColour Player who made the move
+     * @param parentNode Pointer to parent
+     * @param board Current board state
+     * @param nodeHash Zobrist hash of this state
+     */
+    Node(int column, int row, char moveColour, Node* parentNode, const Bitboard& board, uint64_t nodeHash = 0)
         : moveColumn{column}
         , moveRow{row}
         , colour{moveColour}
@@ -49,6 +64,7 @@ struct Node
         , raveVisits{0}
         , wins{0.0}
         , parent{parentNode}
+        , hash{nodeHash}
     {
         // Populate untried moves
         // We iterate 0..120 and check if occupied
@@ -61,6 +77,20 @@ struct Node
                 untriedMoves.push_back(static_cast<int16_t>(i));
             }
         }
+        
+        // Increment global node counter for benchmarking
+        extern long long g_nodeCount;
+        g_nodeCount++;
+    }
+
+    ~Node() 
+    {
+#ifdef NO_POOL
+        for (Node* child : children) 
+        {
+            delete child;
+        }
+#endif
     }
 
     /**
@@ -91,7 +121,7 @@ struct Node
 
         for (const auto& childPtr : children) 
         {
-            Node* child = childPtr.get();
+            Node* child = childPtr;
             // UCT Part
             double uctValue = 0.0;
             if (child->visits > 0) 

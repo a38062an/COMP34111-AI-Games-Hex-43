@@ -8,6 +8,7 @@
 #include <memory>
 #include <algorithm>
 #include <chrono>
+#include <deque>
 #include "Bitboard.h"
 
 #include "Node.h"
@@ -25,16 +26,22 @@ class MCTS
 public:
     Bitboard rootBoard; ///< The board state at the root of the search tree
     char myColour;      ///< The colour of the agent running the search
+    double explorationConstant;
+    double raveConstant;
 
     /**
      * @brief Construct a new MCTS engine.
      * 
      * @param board The current board state.
      * @param colour The agent's colour.
+     * @param exploration UCT exploration constant (default 1.414).
+     * @param rave RAVE constant (default 1000.0).
      */
-    MCTS(const Bitboard& board, char colour) 
+    MCTS(const Bitboard& board, char colour, double exploration = 1.414, double rave = 1000.0) 
         : rootBoard{board}
         , myColour{colour} 
+        , explorationConstant{exploration}
+        , raveConstant{rave}
     {}
 
     /**
@@ -44,6 +51,88 @@ public:
      * @return pair<int, int> The best move coordinates (col, row).
      */
     pair<int, int> runSearch(int timeLimitMs);
+ 
+    struct TTEntry 
+    {
+        uint64_t hash;
+        double wins;
+        int visits;
+    };
+
+    struct TranspositionTable 
+    {
+        static const int SIZE = 1 << 20; // 1M entries
+        vector<TTEntry> table;
+        long long ttHits = 0;
+
+        TranspositionTable() : table(SIZE) {}
+
+        void store(uint64_t hash, double wins, int visits) 
+        {
+            int index = hash % SIZE;
+            // Simple replacement strategy: replace if more visits
+            if (visits > table[index].visits) 
+            {
+                table[index] = {hash, wins, visits};
+            }
+        }
+        
+        void clear() 
+        {
+            fill(table.begin(), table.end(), TTEntry{0, 0.0, 0});
+            ttHits = 0;
+        }
+
+        bool lookup(uint64_t hash, double& wins, int& visits) 
+        {
+            int index = hash % SIZE;
+            if (table[index].hash == hash) 
+            {
+                wins = table[index].wins;
+                visits = table[index].visits;
+                ttHits++;
+                return true;
+            }
+            return false;
+        }
+    };
+
+    struct ZobristHasher 
+    {
+        uint64_t table[121][2]; // [tile][player]
+        uint64_t turn[2];       // [turn]
+
+        ZobristHasher(); // Defined in cpp
+
+        uint64_t getHash(const Bitboard& board, char currentTurn);
+        uint64_t updateHash(uint64_t currentHash, int col, int row, char player);
+    };
+
+    struct NodePool 
+    {
+        deque<Node> pool;
+        
+        NodePool() 
+        {
+            // No reserve needed for deque, but we can't reserve anyway
+        }
+        
+        void reset() 
+        {
+            pool.clear();
+        }
+        
+        template<typename... Args>
+        Node* alloc(Args&&... args) 
+        {
+            pool.emplace_back(std::forward<Args>(args)...);
+            return &pool.back();
+        }
+    };
+
+    static TranspositionTable tt;
+    static ZobristHasher hasher;
+    static NodePool nodePool;
 
 private:
     /**

@@ -88,11 +88,11 @@ void HexAgent::parseBoard(const string& boardString)
 Point HexAgent::makeMove() 
 {
     // Use MCTS to decide move
-    // Time limit: 5 second (5000ms) for now
+    // Time limit: 4 second (4000ms) for now
     // TODO: Dynamic time management based on remaining time
     
     MCTS mcts(bitboard, myColour);
-    pair<int, int> bestMove = mcts.runSearch(1000);
+    pair<int, int> bestMove = mcts.runSearch(4000);
 
     if (bestMove.first != -1) 
     {

@@ -1,0 +1,110 @@
+Running Benchmark (1000ms)...
+Benchmark Complete.
+Nodes Expanded: 40235
+Nodes Per Second (NPS): 40235
+Starting Experiment: RAVE vs UCT
+Configuration: OPTIMIZED (Pool, TT, Zobrist)
+Games: 100, Time Limit: 4000ms
+Game 1: RAVE(Red) vs UCT(Blue)... Red won in 21 moves.
+Game 2: UCT(Red) vs RAVE(Blue)... Red won in 23 moves.
+Game 3: RAVE(Red) vs UCT(Blue)... Red won in 21 moves.
+Game 4: UCT(Red) vs RAVE(Blue)... Red won in 23 moves.
+Game 5: RAVE(Red) vs UCT(Blue)... Red won in 21 moves.
+Game 6: UCT(Red) vs RAVE(Blue)... Blue won in 24 moves.
+Game 7: RAVE(Red) vs UCT(Blue)... Red won in 21 moves.
+Game 8: UCT(Red) vs RAVE(Blue)... Red won in 23 moves.
+Game 9: RAVE(Red) vs UCT(Blue)... Red won in 21 moves.
+Game 10: UCT(Red) vs RAVE(Blue)... Blue won in 24 moves.
+Game 11: RAVE(Red) vs UCT(Blue)... Red won in 21 moves.
+Game 12: UCT(Red) vs RAVE(Blue)... Blue won in 24 moves.
+Game 13: RAVE(Red) vs UCT(Blue)... Red won in 21 moves.
+Game 14: UCT(Red) vs RAVE(Blue)... Red won in 23 moves.
+Game 15: RAVE(Red) vs UCT(Blue)... Red won in 21 moves.
+Game 16: UCT(Red) vs RAVE(Blue)... Red won in 23 moves.
+Game 17: RAVE(Red) vs UCT(Blue)... Red won in 21 moves.
+Game 18: UCT(Red) vs RAVE(Blue)... Red won in 23 moves.
+Game 19: RAVE(Red) vs UCT(Blue)... Red won in 21 moves.
+Game 20: UCT(Red) vs RAVE(Blue)... Red won in 23 moves.
+Game 21: RAVE(Red) vs UCT(Blue)... Red won in 21 moves.
+Game 22: UCT(Red) vs RAVE(Blue)... Red won in 23 moves.
+Game 23: RAVE(Red) vs UCT(Blue)... Red won in 21 moves.
+Game 24: UCT(Red) vs RAVE(Blue)... Red won in 23 moves.
+Game 25: RAVE(Red) vs UCT(Blue)... Red won in 21 moves.
+Game 26: UCT(Red) vs RAVE(Blue)... Blue won in 24 moves.
+Game 27: RAVE(Red) vs UCT(Blue)... Red won in 21 moves.
+Game 28: UCT(Red) vs RAVE(Blue)... Blue won in 24 moves.
+Game 29: RAVE(Red) vs UCT(Blue)... Red won in 21 moves.
+Game 30: UCT(Red) vs RAVE(Blue)... Red won in 23 moves.
+Game 31: RAVE(Red) vs UCT(Blue)... Red won in 21 moves.
+Game 32: UCT(Red) vs RAVE(Blue)... Red won in 23 moves.
+Game 33: RAVE(Red) vs UCT(Blue)... Red won in 21 moves.
+Game 34: UCT(Red) vs RAVE(Blue)... Red won in 23 moves.
+Game 35: RAVE(Red) vs UCT(Blue)... Red won in 21 moves.
+Game 36: UCT(Red) vs RAVE(Blue)... Red won in 23 moves.
+Game 37: RAVE(Red) vs UCT(Blue)... Red won in 21 moves.
+Game 38: UCT(Red) vs RAVE(Blue)... Blue won in 24 moves.
+Game 39: RAVE(Red) vs UCT(Blue)... Red won in 21 moves.
+Game 40: UCT(Red) vs RAVE(Blue)... Blue won in 24 moves.
+Game 41: RAVE(Red) vs UCT(Blue)... Red won in 21 moves.
+Game 42: UCT(Red) vs RAVE(Blue)... Blue won in 24 moves.
+Game 43: RAVE(Red) vs UCT(Blue)... Red won in 21 moves.
+Game 44: UCT(Red) vs RAVE(Blue)... Red won in 23 moves.
+Game 45: RAVE(Red) vs UCT(Blue)... Red won in 21 moves.
+Game 46: UCT(Red) vs RAVE(Blue)... Red won in 21 moves.
+Game 47: RAVE(Red) vs UCT(Blue)... Red won in 21 moves.
+Game 48: UCT(Red) vs RAVE(Blue)... Red won in 23 moves.
+Game 49: RAVE(Red) vs UCT(Blue)... Red won in 21 moves.
+Game 50: UCT(Red) vs RAVE(Blue)... Red won in 23 moves.
+Game 51: RAVE(Red) vs UCT(Blue)... Red won in 21 moves.
+Game 52: UCT(Red) vs RAVE(Blue)... Red won in 23 moves.
+Game 53: RAVE(Red) vs UCT(Blue)... Red won in 21 moves.
+Game 54: UCT(Red) vs RAVE(Blue)... Red won in 23 moves.
+Game 55: RAVE(Red) vs UCT(Blue)... Red won in 21 moves.
+Game 56: UCT(Red) vs RAVE(Blue)... Blue won in 24 moves.
+Game 57: RAVE(Red) vs UCT(Blue)... Red won in 21 moves.
+Game 58: UCT(Red) vs RAVE(Blue)... Blue won in 24 moves.
+Game 59: RAVE(Red) vs UCT(Blue)... Red won in 21 moves.
+Game 60: UCT(Red) vs RAVE(Blue)... Blue won in 24 moves.
+Game 61: RAVE(Red) vs UCT(Blue)... Red won in 21 moves.
+Game 62: UCT(Red) vs RAVE(Blue)... Blue won in 24 moves.
+Game 63: RAVE(Red) vs UCT(Blue)... Red won in 21 moves.
+Game 64: UCT(Red) vs RAVE(Blue)... Blue won in 24 moves.
+Game 65: RAVE(Red) vs UCT(Blue)... Red won in 21 moves.
+Game 66: UCT(Red) vs RAVE(Blue)... Blue won in 24 moves.
+Game 67: RAVE(Red) vs UCT(Blue)... Red won in 21 moves.
+Game 68: UCT(Red) vs RAVE(Blue)... Blue won in 24 moves.
+Game 69: RAVE(Red) vs UCT(Blue)... Red won in 21 moves.
+Game 70: UCT(Red) vs RAVE(Blue)... Blue won in 24 moves.
+Game 71: RAVE(Red) vs UCT(Blue)... Red won in 21 moves.
+Game 72: UCT(Red) vs RAVE(Blue)... Red won in 23 moves.
+Game 73: RAVE(Red) vs UCT(Blue)... Red won in 21 moves.
+Game 74: UCT(Red) vs RAVE(Blue)... Red won in 23 moves.
+Game 75: RAVE(Red) vs UCT(Blue)... Red won in 21 moves.
+Game 76: UCT(Red) vs RAVE(Blue)... Red won in 23 moves.
+Game 77: RAVE(Red) vs UCT(Blue)... Red won in 21 moves.
+Game 78: UCT(Red) vs RAVE(Blue)... Red won in 23 moves.
+Game 79: RAVE(Red) vs UCT(Blue)... Red won in 21 moves.
+Game 80: UCT(Red) vs RAVE(Blue)... Red won in 21 moves.
+Game 81: RAVE(Red) vs UCT(Blue)... Red won in 21 moves.
+Game 82: UCT(Red) vs RAVE(Blue)... Blue won in 24 moves.
+Game 83: RAVE(Red) vs UCT(Blue)... Red won in 21 moves.
+Game 84: UCT(Red) vs RAVE(Blue)... Blue won in 24 moves.
+Game 85: RAVE(Red) vs UCT(Blue)... Red won in 21 moves.
+Game 86: UCT(Red) vs RAVE(Blue)... Blue won in 24 moves.
+Game 87: RAVE(Red) vs UCT(Blue)... Red won in 21 moves.
+Game 88: UCT(Red) vs RAVE(Blue)... Blue won in 24 moves.
+Game 89: RAVE(Red) vs UCT(Blue)... Red won in 21 moves.
+Game 90: UCT(Red) vs RAVE(Blue)... Blue won in 24 moves.
+Game 91: RAVE(Red) vs UCT(Blue)... Red won in 21 moves.
+Game 92: UCT(Red) vs RAVE(Blue)... Blue won in 24 moves.
+Game 93: RAVE(Red) vs UCT(Blue)... Red won in 21 moves.
+Game 94: UCT(Red) vs RAVE(Blue)... Blue won in 24 moves.
+Game 95: RAVE(Red) vs UCT(Blue)... Red won in 21 moves.
+Game 96: UCT(Red) vs RAVE(Blue)... Blue won in 24 moves.
+Game 97: RAVE(Red) vs UCT(Blue)... Red won in 21 moves.
+Game 98: UCT(Red) vs RAVE(Blue)... Blue won in 24 moves.
+Game 99: RAVE(Red) vs UCT(Blue)... Red won in 21 moves.
+Game 100: UCT(Red) vs RAVE(Blue)... Blue won in 24 moves.
+Final Results:
+RAVE Wins: 76 (76%)
+UCT Wins:  24 (24%)

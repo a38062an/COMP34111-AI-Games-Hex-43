@@ -92,3 +92,41 @@ To ensure the agent plays at a high level within the 5-minute time limit, we imp
 *   **Problem**: The standard MCTS agent doesn't understand that it might switch sides on turn 2.
 *   **Solution**: We explicitly handle the `SWAP` command in `HexAgent.cpp`.
 *   **Benefit**: If the opponent swaps, the agent correctly inverts its color and plays for the new side.
+
+## 5. Experimentation & Benchmarking
+
+We have included a rigorous benchmarking suite to validate our optimizations.
+
+### 1. Running the Experiments
+To reproduce our results, run the experiments and save the output to log files:
+
+```bash
+cd src
+make Experiment ExperimentBase
+
+# Run Optimized (High Performance)
+./Experiment > ../opt.txt
+
+# Run Unoptimized (Baseline)
+./ExperimentBase > ../unopt.txt
+```
+
+### 2. Generating Evidence Graphs
+We use a Python script to parse the logs and visualize the results.
+
+```bash
+# From agents/Group43 directory
+python3 scripts/plot_experiments.py opt.txt unopt.txt
+```
+
+This will generate three graphs in the `plots/` directory based on **your actual run data**:
+*   `plots/win_rate.png`: RAVE vs UCT Win Rate.
+*   `plots/nps.png`: Nodes Per Second comparison.
+*   `plots/consistency.png`: Game length variance.
+
+## 6. Documentation
+*   **[Full Documentation (docs/)](docs/README.md)**
+*   **[Optimizations & Benchmarks](docs/optimizations.md)**
+*   **[Protocol Specification](docs/PROTOCOL.md)**
+*   **[walkthrough.md](walkthrough.md)**: High-level summary of changes.
+```
