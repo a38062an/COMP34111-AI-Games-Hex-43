@@ -125,7 +125,7 @@ This will generate three graphs in the `plots/` directory based on **your actual
 *   `plots/consistency.png`: Game length variance.
 
 ## 6. Documentation
-*   **[Full Documentation (docs/)](docs/README.md)**
+
 *   **[Optimizations & Benchmarks](docs/optimizations.md)**
 *   **[Protocol Specification](docs/PROTOCOL.md)**
 *   **[walkthrough.md](walkthrough.md)**: High-level summary of changes.

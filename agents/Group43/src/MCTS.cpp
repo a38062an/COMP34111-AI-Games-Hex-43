@@ -3,7 +3,6 @@
 
 using namespace std;
 #include <random>
-#include <deque>
 
 // Static member definitions
 MCTS::TranspositionTable MCTS::tt;
