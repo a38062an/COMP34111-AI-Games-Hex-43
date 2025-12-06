@@ -1,1 +1,1 @@
-agents.Group43.ExternalAgent Group43Agent
+agents.Group43.Group43Agent Group43Agent
