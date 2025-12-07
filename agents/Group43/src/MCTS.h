@@ -1,5 +1,4 @@
-#ifndef MCTS_H
-#define MCTS_H
+#pragma once
 
 #include <vector>
 #include <cstdint>
@@ -17,11 +16,11 @@ using namespace std;
 
 /**
  * @brief Monte Carlo Tree Search (MCTS) engine.
- * 
+ *
  * Implements the standard MCTS algorithm with 4 phases:
  * Selection, Expansion, Simulation, and Backpropagation.
  */
-class MCTS 
+class MCTS
 {
 public:
     Bitboard rootBoard; ///< The board state at the root of the search tree
@@ -31,35 +30,33 @@ public:
 
     /**
      * @brief Construct a new MCTS engine.
-     * 
+     *
      * @param board The current board state.
      * @param colour The agent's colour.
      * @param exploration UCT exploration constant (default 1.414).
      * @param rave RAVE constant (default 1000.0).
      */
-    MCTS(const Bitboard& board, char colour, double exploration = 1.414, double rave = 1000.0) 
-        : rootBoard{board}
-        , myColour{colour} 
-        , explorationConstant{exploration}
-        , raveConstant{rave}
-    {}
+    MCTS(const Bitboard &board, char colour, double exploration = 1.414, double rave = 1000.0)
+        : rootBoard{board}, myColour{colour}, explorationConstant{exploration}, raveConstant{rave}
+    {
+    }
 
     /**
      * @brief Run the MCTS search for a specified time duration.
-     * 
+     *
      * @param timeLimitMs Time limit in milliseconds.
      * @return pair<int, int> The best move coordinates (col, row).
      */
     pair<int, int> runSearch(int timeLimitMs);
- 
-    struct TTEntry 
+
+    struct TTEntry
     {
         uint64_t hash;
         double wins;
         int visits;
     };
 
-    struct TranspositionTable 
+    struct TranspositionTable
     {
         static const int SIZE = 1 << 20; // 1M entries
         vector<TTEntry> table;
@@ -67,26 +64,26 @@ public:
 
         TranspositionTable() : table(SIZE) {}
 
-        void store(uint64_t hash, double wins, int visits) 
+        void store(uint64_t hash, double wins, int visits)
         {
             int index = hash % SIZE;
             // Simple replacement strategy: replace if more visits
-            if (visits > table[index].visits) 
+            if (visits > table[index].visits)
             {
                 table[index] = {hash, wins, visits};
             }
         }
-        
-        void clear() 
+
+        void clear()
         {
             fill(table.begin(), table.end(), TTEntry{0, 0.0, 0});
             ttHits = 0;
         }
 
-        bool lookup(uint64_t hash, double& wins, int& visits) 
+        bool lookup(uint64_t hash, double &wins, int &visits)
         {
             int index = hash % SIZE;
-            if (table[index].hash == hash) 
+            if (table[index].hash == hash)
             {
                 wins = table[index].wins;
                 visits = table[index].visits;
@@ -97,33 +94,33 @@ public:
         }
     };
 
-    struct ZobristHasher 
+    struct ZobristHasher
     {
         uint64_t table[121][2]; // [tile][player]
         uint64_t turn[2];       // [turn]
 
         ZobristHasher(); // Defined in cpp
 
-        uint64_t getHash(const Bitboard& board, char currentTurn);
+        uint64_t getHash(const Bitboard &board, char currentTurn);
         uint64_t updateHash(uint64_t currentHash, int col, int row, char player);
     };
 
-    struct NodePool 
+    struct NodePool
     {
         deque<Node> pool;
-        
-        NodePool() 
+
+        NodePool()
         {
             // No reserve needed for deque, but we can't reserve anyway
         }
-        
-        void reset() 
+
+        void reset()
         {
             pool.clear();
         }
-        
-        template<typename... Args>
-        Node* alloc(Args&&... args) 
+
+        template <typename... Args>
+        Node *alloc(Args &&...args)
         {
             pool.emplace_back(std::forward<Args>(args)...);
             return &pool.back();
@@ -137,18 +134,18 @@ public:
 private:
     /**
      * @brief Selection Phase: Traverse down to a leaf node.
-     * 
+     *
      * Uses UCT to select the best child at each step until a node
      * with untried moves is reached.
      */
-    Node* select(Node* node, Bitboard& board);
+    Node *select(Node *node, Bitboard &board);
 
     /**
      * @brief Expansion Phase: Add a new child to the tree.
-     * 
+     *
      * Picks a random untried move from the leaf node and creates a new child.
      */
-    Node* expand(Node* node, Bitboard& board);
+    Node *expand(Node *node, Bitboard &board);
 
     /**
      * @brief Result of a simulation.
@@ -156,7 +153,7 @@ private:
     /**
      * @brief Result of a simulation.
      */
-    struct SimulationResult 
+    struct SimulationResult
     {
         char winner;
         Bitboard redMoves;
@@ -165,7 +162,7 @@ private:
 
     /**
      * @brief Simulation Phase: Play a random game to completion.
-     * 
+     *
      * @param board The board state to simulate from.
      * @param turnColour The player whose turn it is to move next.
      * @return SimulationResult The winner and the moves played.
@@ -174,16 +171,16 @@ private:
 
     /**
      * @brief Backpropagation Phase: Update stats up the tree.
-     * 
+     *
      * Updates visit counts and win counts for all nodes from the leaf to the root.
      * Also updates RAVE statistics.
      */
-    void backpropagate(Node* node, const SimulationResult& result);
-    
+    void backpropagate(Node *node, const SimulationResult &result);
+
     /**
      * @brief Helper to get the opponent's colour.
      */
-    char getOpponent(char colour) 
+    char getOpponent(char colour)
     {
         return (colour == 'R') ? 'B' : 'R';
     }
@@ -192,16 +189,17 @@ private:
     /**
      * @brief Fast Xorshift Random Number Generator.
      */
-    struct FastRNG 
+    struct FastRNG
     {
         uint32_t state;
-        
-        FastRNG(uint32_t seed = 123456789) : state(seed) 
+
+        FastRNG(uint32_t seed = 123456789) : state(seed)
         {
-            if (state == 0) state = 123456789;
+            if (state == 0)
+                state = 123456789;
         }
 
-        uint32_t next() 
+        uint32_t next()
         {
             uint32_t x = state;
             x ^= x << 13;
@@ -209,9 +207,9 @@ private:
             x ^= x << 5;
             return state = x;
         }
-        
+
         // Returns random number in [0, max-1]
-        uint32_t range(uint32_t max) 
+        uint32_t range(uint32_t max)
         {
             return next() % max;
         }
@@ -219,5 +217,3 @@ private:
 
     FastRNG rng;
 };
-
-#endif

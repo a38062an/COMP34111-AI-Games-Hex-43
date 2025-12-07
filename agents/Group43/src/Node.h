@@ -1,5 +1,4 @@
-#ifndef NODE_H
-#define NODE_H
+#pragma once
 
 #include <memory>
 #include <vector>
@@ -127,5 +126,3 @@ struct Node
         return best;
     }
 };
-
-#endif

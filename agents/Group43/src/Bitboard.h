@@ -1,9 +1,8 @@
-#ifndef BITBOARD_H
-#define BITBOARD_H
+#pragma once
 
-#include <vector>
 #include <bitset>
 #include <iostream>
+#include <array>
 
 using namespace std;
 
@@ -28,7 +27,7 @@ class Bitboard
 {
 private:
     // Static lookup table, shared by ALL Bitboards
-    inline static vector<AdjacencyList> ADJACENCY;
+    inline static array<AdjacencyList, NUM_TILES> ADJACENCY;
 
 public:
     bitset<NUM_TILES> red;  ///< Bitset for Red pieces (1 = occupied by Red)
@@ -37,12 +36,12 @@ public:
     // Static initializer function (call once in main or static block)
     static void initTables()
     {
-        if (!ADJACENCY.empty())
+        // Optimization: Check if Tile 0 has neighbors to see if we already initialized.
+        if (ADJACENCY[0].count != 0)
             return;
 
         int neighbors[6][2] = {{0, -1}, {1, -1}, {-1, 0}, {1, 0}, {-1, 1}, {0, 1}};
 
-        ADJACENCY.resize(NUM_TILES);
         for (int i = 0; i < NUM_TILES; ++i)
         {
             int cx = i % BOARD_SIZE;
@@ -229,5 +228,3 @@ public:
         return false;
     }
 };
-
-#endif
