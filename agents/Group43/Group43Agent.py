@@ -17,8 +17,8 @@ class Group43Agent(AgentBase):
     """
 
     # --- Constants for easy configuration ---
-    EXECUTABLE_PATH = "agents/Group43/src/CppAgent"
-    MAKEFILE_DIR = "agents/Group43/src"
+    EXECUTABLE_PATH = "agents/Group43/bin/CppAgent"
+    MAKEFILE_DIR = "agents/Group43"
     BOARD_SIZE = "11"
 
     def __init__(self, colour: Colour):

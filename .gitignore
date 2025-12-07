@@ -161,10 +161,29 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
-# C++ Build Artifacts
+# C++ and Project Specifics
+
+# Object files and dependencies
 *.o
+*.obj
+*.d
+
+# Executables (Windows)
+*.exe
+*.dll
+*.lib
+
+# Specific C++ Binaries (from your Makefile)
 CppAgent
-CppAgent.dSYM/
+Experiment
+ExperimentBase
+ExperimentNoTT
+
+# Debug symbols (macOS/Linux)
+*.dSYM/
+
+# Game Logs
+game.log
 
 # Game Logs
 game.log
