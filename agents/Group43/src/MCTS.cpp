@@ -63,7 +63,7 @@ uint64_t MCTS::ZobristHasher::updateHash(uint64_t currentHash, int col, int row,
     return currentHash;
 }
 
-pair<int, int> MCTS::runSearch(int timeLimitMs)
+MCTS::SearchResult MCTS::runSearch(int timeLimitMs)
 {
     auto startTime = chrono::high_resolution_clock::now();
 
@@ -93,13 +93,18 @@ pair<int, int> MCTS::runSearch(int timeLimitMs)
     }
 #endif
 
+    int iterations = 0;
     while (true)
     {
-        auto currentTime = chrono::high_resolution_clock::now();
-        auto elapsed = chrono::duration_cast<chrono::milliseconds>(currentTime - startTime).count();
-        if (elapsed >= timeLimitMs)
+        // Check time every 1024 iterations to minimize overhead
+        if ((iterations & 1023) == 0)
         {
-            break;
+            auto currentTime = chrono::high_resolution_clock::now();
+            auto elapsed = chrono::duration_cast<chrono::milliseconds>(currentTime - startTime).count();
+            if (elapsed >= timeLimitMs)
+            {
+                break;
+            }
         }
 
         Bitboard simulationBoard = rootBoard;
@@ -121,6 +126,8 @@ pair<int, int> MCTS::runSearch(int timeLimitMs)
 
         // 4. Backpropagation
         backpropagate(leaf, result);
+        
+        iterations++;
     }
 
     // Return best move (child with most visits)
@@ -143,14 +150,14 @@ pair<int, int> MCTS::runSearch(int timeLimitMs)
 #ifdef NO_POOL
         delete root;
 #endif
-        return move;
+        return {move, iterations};
     }
 
     // Fallback if no search happened (should not happen)
 #ifdef NO_POOL
     delete root;
 #endif
-    return {-1, -1};
+    return {{-1, -1}, iterations};
 }
 
 Node *MCTS::select(Node *node, Bitboard &board)

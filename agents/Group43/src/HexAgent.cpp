@@ -92,7 +92,8 @@ Point HexAgent::makeMove()
     // TODO: Dynamic time management based on remaining time
     
     MCTS mcts(bitboard, myColour);
-    pair<int, int> bestMove = mcts.runSearch(4000);
+    MCTS::SearchResult result = mcts.runSearch(4000);
+    pair<int, int> bestMove = result.move;
 
     if (bestMove.first != -1) 
     {

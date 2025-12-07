@@ -1,37 +1,37 @@
 --------------------------------------
 Running Speed Benchmark (NPS)...
-Time Elapsed:   1028ms
-Nodes Expanded: 283715
-NPS Score:      275987
+Time Elapsed:   1012ms
+Nodes Expanded: 362497
+NPS Score:      358198
 --------------------------------------
 
 Starting Tournament: RAVE (1000) vs UCT (0.0)
-Games: 20 | Time/Move: 50ms
+Games: 20 | Time/Move: 500ms
 Build: UNOPTIMIZED (Standard new/delete)
 --------------------------------------
-GameID,RedPlayer,BluePlayer,Winner,Moves,TTHits
-1,RAVE,UCT,Red,37,0
-2,UCT,RAVE,Blue,30,0
-3,RAVE,UCT,Red,47,0
-4,UCT,RAVE,Blue,30,0
-5,RAVE,UCT,Red,47,0
-6,UCT,RAVE,Blue,30,0
-7,RAVE,UCT,Red,37,0
-8,UCT,RAVE,Blue,30,0
-9,RAVE,UCT,Blue,52,0
-10,UCT,RAVE,Blue,30,0
-11,RAVE,UCT,Red,33,0
-12,UCT,RAVE,Blue,34,0
-13,RAVE,UCT,Red,33,0
-14,UCT,RAVE,Blue,30,0
-15,RAVE,UCT,Blue,54,0
-16,UCT,RAVE,Blue,30,0
-17,RAVE,UCT,Red,37,0
-18,UCT,RAVE,Blue,30,0
-19,RAVE,UCT,Blue,40,0
-20,UCT,RAVE,Blue,34,0
+GameID,RedPlayer,BluePlayer,Winner,Moves,TTHits,TotalSimulations,TotalDuration
+1,RAVE,UCT,Red,21,0,4425728,10638
+2,UCT,RAVE,Blue,38,0,7616512,19252
+3,RAVE,UCT,Red,21,0,4370432,10636
+4,UCT,RAVE,Blue,52,0,10894336,26355
+5,RAVE,UCT,Red,21,0,4440064,10641
+6,UCT,RAVE,Blue,38,0,7664640,19245
+7,RAVE,UCT,Red,21,0,4446208,10636
+8,UCT,RAVE,Blue,38,0,7661568,19243
+9,RAVE,UCT,Red,21,0,4426752,10631
+10,UCT,RAVE,Blue,38,0,7600128,19244
+11,RAVE,UCT,Red,21,0,4410368,10636
+12,UCT,RAVE,Blue,38,0,7676928,19239
+13,RAVE,UCT,Red,21,0,4421632,10638
+14,UCT,RAVE,Blue,38,0,7660544,19246
+15,RAVE,UCT,Red,21,0,4362240,10638
+16,UCT,RAVE,Blue,38,0,7660544,19249
+17,RAVE,UCT,Red,21,0,4362240,10637
+18,UCT,RAVE,Blue,38,0,7680000,19246
+19,RAVE,UCT,Red,21,0,4358144,10634
+20,UCT,RAVE,Blue,38,0,7727104,19245
 --------------------------------------
 FINAL RESULTS
 --------------------------------------
-RAVE Wins: 17 (85.00%)
-UCT Wins:  3 (15.00%)
+RAVE Wins: 20 (100.00%)
+UCT Wins:  0 (0.00%)

@@ -47,7 +47,19 @@ public:
      * @param timeLimitMs Time limit in milliseconds.
      * @return pair<int, int> The best move coordinates (col, row).
      */
-    pair<int, int> runSearch(int timeLimitMs);
+    struct SearchResult
+    {
+        pair<int, int> move;
+        int iterations;
+    };
+
+    /**
+     * @brief Run the MCTS search for a specified time duration.
+     *
+     * @param timeLimitMs Time limit in milliseconds.
+     * @return SearchResult Best move and simulation count.
+     */
+    SearchResult runSearch(int timeLimitMs);
 
     struct TTEntry
     {

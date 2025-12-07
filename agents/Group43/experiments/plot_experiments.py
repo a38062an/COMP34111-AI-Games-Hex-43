@@ -10,12 +10,14 @@ def parse_log(filename):
     nps = 0
     lengths = []
     tt_hits = []
+    sims_per_game = []
+    durations = []
     rave_wins = 0
     total_games = 0
 
     if not os.path.exists(filename):
         print(f"Error: File {filename} not found.")
-        return 0, [], 0, 0, []
+        return 0, [], 0, 0, [], [], []
 
     print(f"Processing {filename}...")
 
@@ -60,12 +62,22 @@ def parse_log(filename):
 
                 # Handle TT Hits (might be missing in baseline)
                 hits = 0
+                sims = 0
+                duration = 0
                 if len(parts) >= 6:
                     hits = int(parts[5])
+                
+                if len(parts) >= 7:
+                    sims = int(parts[6])
+
+                if len(parts) >= 8:
+                    duration = int(parts[7])
 
                 # Store Stats
                 lengths.append(moves)
                 tt_hits.append(hits)
+                sims_per_game.append(sims)
+                durations.append(duration)
                 total_games += 1
 
                 # Determine if RAVE won
@@ -77,7 +89,72 @@ def parse_log(filename):
             except ValueError:
                 continue # Skip malformed lines
 
-    return nps, lengths, rave_wins, total_games, tt_hits
+    return nps, lengths, rave_wins, total_games, tt_hits, sims_per_game, durations
+
+def plot_sps(opt_sims, opt_dur, unopt_sims, unopt_dur):
+    if not opt_sims or not opt_dur: return
+
+    # Calculate SPS for each game
+    # SPS = Simulations / (Duration / 1000.0)
+    
+    opt_sps = []
+    for i in range(len(opt_sims)):
+        if opt_dur[i] > 0:
+            opt_sps.append(opt_sims[i] / (opt_dur[i] / 1000.0))
+        else:
+            opt_sps.append(0)
+            
+    unopt_sps = []
+    if unopt_sims and unopt_dur:
+        for i in range(len(unopt_sims)):
+            if unopt_dur[i] > 0:
+                unopt_sps.append(unopt_sims[i] / (unopt_dur[i] / 1000.0))
+            else:
+                unopt_sps.append(0)
+
+    plt.figure(figsize=(10, 6))
+    
+    games = range(1, len(opt_sps) + 1)
+    
+    plt.plot(games, opt_sps, label='Optimized', color='#d35400', marker='o', linestyle='-')
+    if unopt_sps:
+        plt.plot(games, unopt_sps, label='Baseline', color='#7f8c8d', marker='x', linestyle='--')
+        
+    plt.title('Simulations Per Second (SPS)')
+    plt.xlabel('Game Number')
+    plt.ylabel('SPS (Simulations/Sec)')
+    plt.legend()
+    plt.grid(True, linestyle='--', alpha=0.3)
+    
+    # Format Entry Y-Axis to K/M
+    current_values = plt.gca().get_yticks()
+    plt.gca().set_yticklabels(['{:,.0f}'.format(x) for x in current_values])
+
+    output_path = 'plots/sps_comparison.png'
+    plt.savefig(output_path)
+    print(f"Generated {output_path}")
+
+def plot_simulations(opt_sims, unopt_sims):
+    if not opt_sims: return
+
+    plt.figure(figsize=(10, 6))
+    
+    # Plot histogram or line? Let's do a line for each game to show consistency vs variance
+    games = range(1, len(opt_sims) + 1)
+    
+    plt.plot(games, opt_sims, label='Optimized', color='#2ecc71', marker='o', linestyle='-')
+    if unopt_sims and sum(unopt_sims) > 0:
+        plt.plot(games, unopt_sims, label='Baseline', color='#95a5a6', marker='x', linestyle='--')
+        
+    plt.title('Total Simulations Per Game')
+    plt.xlabel('Game Number')
+    plt.ylabel('Simulations')
+    plt.legend()
+    plt.grid(True, linestyle='--', alpha=0.3)
+
+    output_path = 'plots/simulations_per_game.png'
+    plt.savefig(output_path)
+    print(f"Generated {output_path}")
 
 def plot_uct_improvement(unopt_rave_wins, unopt_total, opt_rave_wins, opt_total, pool_rave_wins, pool_total):
     """
@@ -181,9 +258,9 @@ if __name__ == "__main__":
     if len(sys.argv) > 3: NOTT_LOG = sys.argv[3]
 
     # 1. Parse Data
-    opt_nps, opt_len, opt_rave, opt_total, opt_hits = parse_log(OPT_LOG)
-    unopt_nps, unopt_len, unopt_rave, unopt_total, unopt_hits = parse_log(UNOPT_LOG)
-    nott_nps, nott_len, nott_rave, nott_total, nott_hits = parse_log(NOTT_LOG)
+    opt_nps, opt_len, opt_rave, opt_total, opt_hits, opt_sims, opt_dur = parse_log(OPT_LOG)
+    unopt_nps, unopt_len, unopt_rave, unopt_total, unopt_hits, unopt_sims, unopt_dur = parse_log(UNOPT_LOG)
+    nott_nps, nott_len, nott_rave, nott_total, nott_hits, nott_sims, nott_dur = parse_log(NOTT_LOG)
 
     # Ensure output directory exists
     if not os.path.exists('plots'):
@@ -200,7 +277,13 @@ if __name__ == "__main__":
     # C. Transposition Table Hits
     plot_tt_hits(opt_hits)
 
-    # D. Overall Win Rates (Pie Charts)
+    # D. Simulations Per Game
+    plot_simulations(opt_sims, unopt_sims)
+    
+    # E. SPS (Simulations Per Second)
+    plot_sps(opt_sims, opt_dur, unopt_sims, unopt_dur)
+    
+    # E. Overall Win Rates (Pie Charts)
     plot_win_rate_pie(opt_rave, opt_total, 'plots/win_rate_optimized.png', 'Optimized Win Rate')
     plot_win_rate_pie(unopt_rave, unopt_total, 'plots/win_rate_baseline.png', 'Baseline Win Rate')
 

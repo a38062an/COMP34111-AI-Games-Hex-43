@@ -1,5 +1,5 @@
-#include "MCTS.h"
-#include "Bitboard.h"
+#include "../src/MCTS.h"
+#include "../src/Bitboard.h"
 #include <iostream>
 #include <iomanip>
 #include <chrono>
@@ -9,7 +9,7 @@ using namespace std;
 // ==========================================
 // CONFIGURATION
 // ==========================================
-const int TIME_LIMIT_MS = 50;     // Time per move (Lower this for mass testing, e.g., 50ms)
+const int TIME_LIMIT_MS = 500;     // Time per move (Lower this for mass testing, e.g., 50ms)
 const int NUM_GAMES = 20;         // Total games to run
 const double RAVE_CONST = 1000.0; // RAVE parameter 'k'
 const double UCT_CONST = 1.414;   // UCT parameter 'c'
@@ -70,7 +70,7 @@ int main()
 
     cout << "--------------------------------------" << endl;
     // CSV Header for easy data processing later
-    cout << "GameID,RedPlayer,BluePlayer,Winner,Moves,TTHits" << endl;
+    cout << "GameID,RedPlayer,BluePlayer,Winner,Moves,TTHits,TotalSimulations,TotalDuration" << endl;
 
     for (int game = 1; game <= NUM_GAMES; ++game)
     {
@@ -82,6 +82,8 @@ int main()
         Bitboard board;
         char turn = 'R';
         int moves = 0;
+        long long totalSimulations = 0;
+        long long totalDuration = 0;
 
         // Swap roles every game to ensure fairness (Red advantage)
         // Odd Games: Red=RAVE, Blue=UCT
@@ -120,9 +122,16 @@ int main()
             // 3. Run MCTS
             // Note: In a real game, we would reuse the tree.
             // Here we rebuild to test raw search power from scratch.
+            auto startSearch = chrono::high_resolution_clock::now();
             MCTS mcts(board, turn, UCT_CONST, currentRaveK);
-            pair<int, int> move = mcts.runSearch(TIME_LIMIT_MS);
-
+            MCTS::SearchResult result = mcts.runSearch(TIME_LIMIT_MS);
+            auto endSearch = chrono::high_resolution_clock::now();
+            auto duration = chrono::duration_cast<chrono::milliseconds>(endSearch - startSearch).count();
+            
+            pair<int, int> move = result.move;
+            totalSimulations += result.iterations;
+            totalDuration += duration;
+            
             // 4. Handle Draw/No Moves (Should typically not happen in Hex)
             if (move.first == -1)
             {
@@ -137,9 +146,9 @@ int main()
         }
 
 #ifndef NO_TT
-        cout << "," << MCTS::tt.ttHits << endl;
+        cout << "," << MCTS::tt.ttHits << "," << totalSimulations << "," << totalDuration << endl;
 #else
-        cout << ",0" << endl;
+        cout << ",0," << totalSimulations << "," << totalDuration << endl;
 #endif
     }
 
