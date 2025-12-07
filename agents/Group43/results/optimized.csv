@@ -1,0 +1,37 @@
+--------------------------------------
+Running Speed Benchmark (NPS)...
+Time Elapsed:   1000ms
+Nodes Expanded: 279060
+NPS Score:      279060
+--------------------------------------
+
+Starting Tournament: RAVE (1000) vs UCT (0.0)
+Games: 20 | Time/Move: 50ms
+Build: OPTIMIZED (Memory Pool + TT)
+--------------------------------------
+GameID,RedPlayer,BluePlayer,Winner,Moves,TTHits
+1,RAVE,UCT,Red,33,14299
+2,UCT,RAVE,Blue,42,19871
+3,RAVE,UCT,Red,27,9627
+4,UCT,RAVE,Red,45,22422
+5,RAVE,UCT,Red,37,13241
+6,UCT,RAVE,Red,41,18044
+7,RAVE,UCT,Red,33,18260
+8,UCT,RAVE,Blue,28,10973
+9,RAVE,UCT,Red,29,10388
+10,UCT,RAVE,Blue,32,13498
+11,RAVE,UCT,Red,35,11843
+12,UCT,RAVE,Blue,42,23043
+13,RAVE,UCT,Red,31,10519
+14,UCT,RAVE,Red,33,14788
+15,RAVE,UCT,Red,35,13464
+16,UCT,RAVE,Red,29,9821
+17,RAVE,UCT,Blue,48,29938
+18,UCT,RAVE,Blue,32,12762
+19,RAVE,UCT,Blue,30,10534
+20,UCT,RAVE,Blue,32,11182
+--------------------------------------
+FINAL RESULTS
+--------------------------------------
+RAVE Wins: 14 (70.00%)
+UCT Wins:  6 (30.00%)
