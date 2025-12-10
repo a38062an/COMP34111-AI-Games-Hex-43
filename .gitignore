@@ -168,3 +168,5 @@ CppAgent.dSYM/
 
 # Game Logs
 game.log
+# VS Code
+.vscode/
