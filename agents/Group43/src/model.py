@@ -16,12 +16,12 @@ class ResidualBlock(nn.Module):
     """
     def __init__(self):
         super(ResidualBlock, self).__init__()
-        self.conv1 = nn.Conv2d(64, 64, kernel_size=3, padding=1)
-        self.conv2 = nn.Conv2d(64, 64, kernel_size=3, padding=1)
-        self.bn1 = nn.BatchNorm2d(64)
-        self.bn2 = nn.BatchNorm2d(64)
+        self.conv1 = nn.Conv2d(32, 32, kernel_size=3, padding=1)
+        self.conv2 = nn.Conv2d(32, 32, kernel_size=3, padding=1)
+        self.bn1 = nn.BatchNorm2d(32)
+        self.bn2 = nn.BatchNorm2d(32)
         self.relu = nn.ReLU()
-        self.se_block = torchvision.ops.SqueezeExcitation(64, 16) # Reduction ratio of 4 to preserve info
+        self.se_block = torchvision.ops.SqueezeExcitation(32, 16) # Reduction ratio of 2 to preserve info
     
     def forward(self, x):
         out = self.conv1(x)
@@ -44,11 +44,13 @@ class HexModel(nn.Module):
     def __init__(self):
         super(HexModel, self).__init__()
         self.stem = nn.Sequential(
-            nn.Conv2d(6, 64, kernel_size=3, padding=1),
-            nn.BatchNorm2d(64),
+            nn.Conv2d(6, 32, kernel_size=3, padding=1),
+            nn.BatchNorm2d(32),
             nn.ReLU(),
         )
         self.residuals = nn.Sequential(
+            ResidualBlock(),
+            ResidualBlock(),
             ResidualBlock(),
             ResidualBlock(),
             ResidualBlock(),
@@ -56,11 +58,11 @@ class HexModel(nn.Module):
         )
 
         self.policy_head = nn.Sequential(
-            nn.Conv2d(64, 32, kernel_size=1),
-            nn.BatchNorm2d(32),
+            nn.Conv2d(32, 2, kernel_size=1),
+            nn.BatchNorm2d(2),
             nn.ReLU(),
             nn.Flatten(),
-            nn.Linear(32 * 11 * 11, 121),
+            nn.Linear(2 * 11 * 11, 121),
         )
 
     def forward(self, x):
