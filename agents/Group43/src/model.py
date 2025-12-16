@@ -65,9 +65,21 @@ class HexModel(nn.Module):
             nn.Linear(2 * 11 * 11, 121),
         )
 
+        self.value_head = nn.Sequential(
+            nn.Conv2d(32, 1, kernel_size=1),
+            nn.BatchNorm2d(1),
+            nn.ReLU(),
+            nn.Flatten(),
+            nn.Linear(1 * 11 * 11, 32),
+            nn.ReLU(),
+            nn.Linear(32, 1),
+            nn.Tanh() # Value is [-1, 1]
+        )
+
     def forward(self, x):
         x = self.stem(x)
         x = self.residuals(x)
-        x = self.policy_head(x)
-        return x
+        policy = self.policy_head(x)
+        value = self.value_head(x)
+        return policy, value
 

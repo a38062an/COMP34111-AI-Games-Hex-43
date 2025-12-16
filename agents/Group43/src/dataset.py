@@ -1,66 +1,117 @@
 import torch
 from torch.utils.data import Dataset
 import numpy as np
+import glob
 import os
 
-class HexDataset(Dataset):
-    def __init__(self, data_path, split='train', val_split=0.1, seed=42):
+class HexNativeDataset(Dataset):
+    def __init__(self, data_dir, board_size=11):
         """
-        Args:
-            data_path (str): Path to the .npz file containing 'features', 'policies', 'values'.
-            split (str): 'train' or 'val'.
-            val_split (float): Fraction of data to use for validation.
-            seed (int): Random seed for splitting accuracy.
+        Loads native KataHex .npz files.
+        Data format:
+        - binaryInputNCHWPacked: (N, 22, 16) uint8 -- Needs unpacking
+        - policyTargetsNCMove: (N, 2, 122) int16 -- [0] is visits? [1] is policy?
+        - valueTargetsNCHW: (N, 5, 11, 11) or globalTargetsNC (N, 64) float
         """
-        if not os.path.exists(data_path):
-            raise FileNotFoundError(f"Data file not found: {data_path}")
-            
-        print(f"Loading dataset from {data_path}...")
-        with np.load(data_path) as data:
-            self.features = data['features']
-            self.policies = data['policies']
-            self.values = data['values']
-            
-        total_len = len(self.features)
-        indices = np.arange(total_len)
+        self.files = glob.glob(os.path.join(data_dir, "*.npz"))
+        self.board_size = board_size
         
-        # Shuffle for split
-        np.random.seed(seed)
-        np.random.shuffle(indices)
-        
-        split_idx = int(total_len * (1 - val_split))
-        
-        if split == 'train':
-            self.indices = indices[:split_idx]
-        else: # val
-            self.indices = indices[split_idx:]
+        if not self.files:
+            raise FileNotFoundError(f"No .npz files found in {data_dir}")
             
-        print(f"Dataset loaded. Split: {split}. Samples: {len(self.indices)}/{total_len}")
+        print(f"Found {len(self.files)} files. Loading...")
+        
+        
+        self.inputs_list = []
+        self.policies_list = []
+        self.values_list = []
+        
+        for f in self.files:
+            try:
+                d = np.load(f)
+                # Input: Unpack on load to save compute during training?
+                # Packed: 22*16 bytes = 352 bytes/sample. 1.2M samples = 400MB.
+                # Unpacked: 22*121*4 bytes = 10KB/sample. 1.2M samples = 12GB.
+                # Better to keep PACKED in RAM and unpack in __getitem__.
+                self.inputs_list.append(d['binaryInputNCHWPacked']) 
+                
+                # Policy: (N, 2, 122). Index 0 is often 'Policy Target' or 'Visit Count'.
+                # Let's assume idx 0 is the robust target distribution. 
+                # Shape 122: 0-120 board, 121 pass?
+                self.policies_list.append(d['policyTargetsNCMove'][:, 0, :])
+                
+                # Value: globalTargetsNC (N, 64). Index 0 is typically Win/Loss (-1 to 1).
+                # Or valueTargetsNCHW.
+                # Let's use globalTargetsNC[:, 0] as the primary Win Outcome.
+                self.values_list.append(d['globalTargetsNC'][:, 0])
+                
+            except Exception as e:
+                print(f"Skipping {f}: {e}")
+                
+        self.inputs = np.concatenate(self.inputs_list)
+        self.policies = np.concatenate(self.policies_list)
+        self.values = np.concatenate(self.values_list)
+        
+        print(f"Loaded {len(self.inputs)} samples.")
+        print(f"Input Shape: {self.inputs.shape} (Packed)")
+        print(f"Policy Shape: {self.policies.shape}")
+        print(f"Value Shape: {self.values.shape}")
 
     def __len__(self):
-        return len(self.indices)
+        return len(self.inputs)
+
+    def unpack(self, packed):
+        # packed: (22, 16)
+        # 1. Unpack to (22, 128) bits
+        bits = np.unpackbits(packed, axis=1)
+        # 2. Trim to (22, 121)
+        bits = bits[:, :self.board_size**2]
+        # 3. Reshape (22, 11, 11)
+        return bits.reshape(22, self.board_size, self.board_size).astype(np.float32)
 
     def __getitem__(self, idx):
-        # Map logical index to physical index
-        real_idx = self.indices[idx]
+        # 1. Unpack Input
+        # (22, 11, 11)
+        features = self.unpack(self.inputs[idx])
         
-        # Load
-        feature = self.features[real_idx] # (6, 11, 11)
-        policy = self.policies[real_idx]  # scalar (0-120)
-        value = self.values[real_idx]     # scalar (-1 or 1)
+        # 2. Extract needed planes
+        # KataGo format often has:
+        # 0: Stones of P1 (Current)
+        # 1: Stones of P2 (Opponent)
+        # ... History ...
+        # For simplicity, take planes 0-5 as "Current State" proxy 
+        # (My, Opp, Empty? No, usually binary masks).
+        # To match the model input size (6), we can select 6 planes.
+        # Let's assume 0=My, 1=Opp.
+        # We need to construct the 6-plane format the model expects:
+        # [My, Opp, Empty, MyDist, OppDist, Color]
+        # Easier to ADAPT DATA to MODEL for now to keep model fixed.
         
-        # Convert to Tensor
+        my_stones = features[0]
+        opp_stones = features[1]
+        empty = 1.0 - (my_stones + opp_stones)
+        
+        # Construct a simple input tensor.
+        model_input = np.zeros((6, 11, 11), dtype=np.float32)
+        model_input[0] = my_stones
+        model_input[1] = opp_stones
+        model_input[2] = empty
+        # Skip Distance planes for now (or computes them on fly - fast).
+        # Color plane might be in features[12] or similar.
+        
+        # 3. Policy Target
+        # Raw policy is (122,) floats/logits.
+        # Convert to label (index) if CrossEntropy, or keep distribution for KLDiv.
+        # AlphaZero uses KL Divergence on the full distribution.
+        # Let's use the distribution directly.
+        policy_dist = self.policies[idx][:121] # Drop 'pass' if hex doesn't support pass
+        # Normalize sum to 1?
+        policy_sum = np.sum(policy_dist)
+        if policy_sum > 0:
+            policy_dist = policy_dist / policy_sum
+        
         return {
-            'feature': torch.from_numpy(feature).float(),
-            'policy': torch.tensor(policy).long(),
-            'value': torch.tensor(value).float()
+            'feature': torch.from_numpy(model_input),
+            'policy': torch.from_numpy(policy_dist).float(),
+            'value': torch.tensor(self.values[idx]).float()
         }
-
-if __name__ == "__main__":
-    # Test
-    path = "agents/Group43/src/processed_data/dataset.npz"
-    if os.path.exists(path):
-        ds = HexDataset(path, split='train')
-        print("Sample 0 Feature Shape:", ds[0]['feature'].shape)
-        print("Sample 0 Policy:", ds[0]['policy'])
-        print("Sample 0 Value:", ds[0]['value'])
