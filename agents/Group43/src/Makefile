@@ -20,3 +20,6 @@ ExperimentBase: Experiment.cpp MCTS.cpp
 
 ExperimentNoTT: Experiment.cpp MCTS.cpp
 	$(CXX) $(CXXFLAGS) -DNO_TT -o ExperimentNoTT Experiment.cpp MCTS.cpp
+
+TestHSearch: tests/TestHSearch.cpp HSearch.cpp
+	$(CXX) $(CXXFLAGS) -o TestHSearch tests/TestHSearch.cpp HSearch.cpp

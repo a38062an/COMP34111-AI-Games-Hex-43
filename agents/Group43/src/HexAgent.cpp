@@ -1,4 +1,5 @@
 #include "HexAgent.h"
+#include "HSearch.h"
 
 using namespace std;
 
@@ -87,6 +88,14 @@ void HexAgent::parseBoard(const string& boardString)
 
 Point HexAgent::makeMove() 
 {
+    // Tactical Solver: Check for forced wins
+    auto forcedWin = HSearch::findForcedWin(bitboard, myColour);
+    if (forcedWin)
+    {
+        pair<int, int> move = forcedWin.value();
+        return {move.first, move.second};
+    }
+
     // Use MCTS to decide move
     // Time limit: 4 second (4000ms) for now
     // TODO: Dynamic time management based on remaining time
