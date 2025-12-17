@@ -114,34 +114,11 @@ public:
         ZobristHasher(); // Defined in cpp
 
         uint64_t getHash(const Bitboard &board, char currentTurn);
-        uint64_t updateHash(uint64_t currentHash, int col, int row, char player);
-    };
-
-    struct NodePool
-    {
-        deque<Node> pool;
-
-        NodePool()
-        {
-            // No reserve needed for deque, but we can't reserve anyway
-        }
-
-        void reset()
-        {
-            pool.clear();
-        }
-
-        template <typename... Args>
-        Node *alloc(Args &&...args)
-        {
-            pool.emplace_back(std::forward<Args>(args)...);
-            return &pool.back();
-        }
+        uint64_t updateHash(uint64_t currentHash, int index, char player);
     };
 
     static TranspositionTable tt;
     static ZobristHasher hasher;
-    static NodePool nodePool;
 
 private:
     /**

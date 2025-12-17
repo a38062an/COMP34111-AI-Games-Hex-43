@@ -7,7 +7,6 @@ using namespace std;
 // Static member definitions
 MCTS::TranspositionTable MCTS::tt;
 MCTS::ZobristHasher MCTS::hasher;
-MCTS::NodePool MCTS::nodePool;
 
 // Global node counter for benchmarking
 long long g_nodeCount = 0;
@@ -27,13 +26,12 @@ MCTS::ZobristHasher::ZobristHasher()
 uint64_t MCTS::ZobristHasher::getHash(const Bitboard &board, char currentTurn)
 {
     uint64_t h = 0;
-    for (int i = 0; i < 121; ++i)
+    // OPTIMIZATION: Loop 0-120 directly using index overloads
+    for (int i = 0; i < NUM_TILES; ++i)
     {
-        int col = i % 11;
-        int row = i / 11;
-        if (board.isOccupied(col, row))
+        if (board.isOccupied(i))
         {
-            char p = board.get(col, row);
+            char p = board.get(i); // Requires the new get(index) overload
             if (p == 'R')
                 h ^= table[i][0];
             else if (p == 'B')
@@ -47,9 +45,9 @@ uint64_t MCTS::ZobristHasher::getHash(const Bitboard &board, char currentTurn)
     return h;
 }
 
-uint64_t MCTS::ZobristHasher::updateHash(uint64_t currentHash, int col, int row, char player)
+// OPTIMIZATION: Take index directly (avoiding row * 11 + col)
+uint64_t MCTS::ZobristHasher::updateHash(uint64_t currentHash, int index, char player)
 {
-    int index = row * 11 + col;
     // XOR in the new piece
     if (player == 'R')
         currentHash ^= table[index][0];
@@ -67,23 +65,13 @@ MCTS::SearchResult MCTS::runSearch(int timeLimitMs)
 {
     auto startTime = chrono::high_resolution_clock::now();
 
-    // Reset the memory pool for the new search
-#ifndef NO_POOL
-    nodePool.reset();
-#endif
-
     // Initialize root node with Zobrist hash
     uint64_t rootHash = hasher.getHash(rootBoard, getOpponent(myColour));
-#ifndef NO_POOL
-    // OPTIMIZED: Use Memory Pool (O(1) allocation, better cache locality)
-    Node *root = nodePool.alloc(-1, -1, getOpponent(myColour), nullptr, rootBoard, rootHash);
-#else
-    // UNOPTIMIZED: Use standard new (slower system call, fragmentation)
-    Node *root = new Node(-1, -1, getOpponent(myColour), nullptr, rootBoard, rootHash);
-#endif
+    
+    // Root Creation
+    Node *root = new Node(255, getOpponent(myColour), nullptr, rootBoard, rootHash);
 
     // Check TT for root
-#ifndef NO_TT
     double wins;
     int visits;
     if (tt.lookup(rootHash, wins, visits))
@@ -91,7 +79,6 @@ MCTS::SearchResult MCTS::runSearch(int timeLimitMs)
         root->wins = wins;
         root->visits = visits;
     }
-#endif
 
     int iterations = 0;
     while (true)
@@ -128,6 +115,7 @@ MCTS::SearchResult MCTS::runSearch(int timeLimitMs)
         backpropagate(leaf, result);
         
         iterations++;
+        g_nodeCount++;
     }
 
     // Return best move (child with most visits)
@@ -144,20 +132,19 @@ MCTS::SearchResult MCTS::runSearch(int timeLimitMs)
         }
     }
 
+    // Prepare result
+    pair<int, int> resultMove = {-1, -1};
+
+    // Return best move logic
     if (bestChild)
     {
-        pair<int, int> move = {bestChild->moveColumn, bestChild->moveRow};
-#ifdef NO_POOL
-        delete root;
-#endif
-        return {move, iterations};
+        // Convert index back to coordinates ONLY at the very end
+        int idx = bestChild->moveIndex;
+        resultMove = {idx % BOARD_SIZE, idx / BOARD_SIZE};
     }
 
-    // Fallback if no search happened (should not happen)
-#ifdef NO_POOL
     delete root;
-#endif
-    return {{-1, -1}, iterations};
+    return {resultMove, iterations};
 }
 
 Node *MCTS::select(Node *node, Bitboard &board)
@@ -165,7 +152,8 @@ Node *MCTS::select(Node *node, Bitboard &board)
     while (node->isFullyExpanded() && !node->children.empty())
     {
         node = node->bestChild(explorationConstant, raveConstant);
-        board.set(node->moveColumn, node->moveRow, node->colour);
+        // OPTIMIZATION: Use index overload directly
+        board.set(node->moveIndex, node->colour);
     }
     return node;
 }
@@ -218,22 +206,14 @@ Node *MCTS::expand(Node *node, Bitboard &board)
     // Determine who moves next (opponent of the node's storer)
     char childColour = getOpponent(node->colour);
 
-    int col = moveIndex % BOARD_SIZE;
-    int row = moveIndex / BOARD_SIZE;
-
     // Update board
-    board.set(col, row, childColour);
+    board.set(moveIndex, childColour);
 
     // Hash update
-    uint64_t newHash = hasher.updateHash(node->hash, col, row, childColour);
+    uint64_t newHash = hasher.updateHash(node->hash, moveIndex, childColour);
 
-#ifndef NO_POOL
-    Node *child = nodePool.alloc(col, row, childColour, node, board, newHash);
-#else
-    Node *child = new Node(col, row, childColour, node, board, newHash);
-#endif
+    Node *child = new Node(moveIndex, childColour, node, board, newHash);
 
-#ifndef NO_TT
     double wins;
     int visits;
     if (tt.lookup(newHash, wins, visits))
@@ -241,7 +221,6 @@ Node *MCTS::expand(Node *node, Bitboard &board)
         child->wins = wins;
         child->visits = visits;
     }
-#endif
 
     node->children.push_back(child);
     return child;
@@ -257,9 +236,7 @@ MCTS::SimulationResult MCTS::simulate(Bitboard board, char turnColour)
 
     for (int i = 0; i < NUM_TILES; ++i)
     {
-        int col = i % BOARD_SIZE;
-        int row = i / BOARD_SIZE;
-        if (!board.isOccupied(col, row))
+        if (!board.isOccupied(i))
         {
             moves[movesCount++] = i;
         }
@@ -276,17 +253,14 @@ MCTS::SimulationResult MCTS::simulate(Bitboard board, char turnColour)
         // Remove selected move (swap with end)
         moves[index] = moves[--movesCount];
 
-        int col = moveIndex % BOARD_SIZE;
-        int row = moveIndex / BOARD_SIZE;
-
         // Update local board
-        board.set(col, row, turnColour);
+        board.set(moveIndex, turnColour);
 
         // Track moves for RAVE
         if (turnColour == 'R')
-            result.redMoves.set(col, row, 'R');
+            result.redMoves.set(moveIndex, 'R');
         else
-            result.blueMoves.set(col, row, 'B');
+            result.blueMoves.set(moveIndex, 'B');
 
         // Flip turn
         turnColour = getOpponent(turnColour);
@@ -320,9 +294,7 @@ void MCTS::backpropagate(Node *node, const SimulationResult &result)
         }
 
         // Update TT
-#ifndef NO_TT
         tt.store(node->hash, node->wins, node->visits);
-#endif
 
         // RAVE Update: Update AMAF stats for all children
         char childColour = getOpponent(node->colour);
@@ -331,8 +303,8 @@ void MCTS::backpropagate(Node *node, const SimulationResult &result)
         for (const auto &childPtr : node->children)
         {
             Node *child = childPtr;
-            // Check if child's move appears in the simulation (O(1) check)
-            if (movesToCheck.isOccupied(child->moveColumn, child->moveRow))
+            // OPTIMIZATION: Check RAVE using index directly
+            if (movesToCheck.isOccupied(child->moveIndex))
             {
                 child->raveVisits++;
                 if (childColour == result.winner)

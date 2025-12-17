@@ -1,14 +1,8 @@
 #pragma once
-
-#include <iostream>
-#include <string>
-#include <vector>
-#include <sstream>
-#include <cstdlib>
-#include <ctime>
-
 #include "Bitboard.h"
 #include "MCTS.h"
+#include <vector>
+#include <string>
 
 using namespace std;
 
@@ -34,9 +28,8 @@ public:
      * @brief Construct a new Hex Agent.
      *
      * @param colour The agent's colour ('R' or 'B').
-     * @param size The board size (usually 11).
      */
-    HexAgent(char colour, int size);
+    HexAgent(char colour);
 
     /**
      * @brief Main loop of the agent.
@@ -48,7 +41,6 @@ public:
 
 private:
     char myColour;        ///< The agent's assigned colour
-    int boardSize;        ///< The size of the board (e.g., 11)
     vector<string> board; ///< String representation of the board (for debugging/printing)
     Bitboard bitboard;    ///< Efficient bitset representation for MCTS
 

@@ -7,8 +7,8 @@
 using namespace std;
 
 // 11x11 = 121 tiles
-const int BOARD_SIZE = 11;
-const int NUM_TILES = 121;
+constexpr int BOARD_SIZE = 11;
+constexpr int NUM_TILES = 121;
 
 // A struct to hold pre-calculated neighbors
 struct AdjacencyList
@@ -70,16 +70,14 @@ public:
         blue.reset();
     }
 
-    /**
-     * @brief Place a piece on the board.
+     /**
+     * @brief Place a piece on the board (using direct index).
      *
-     * @param x Column index (0-10)
-     * @param y Row index (0-10)
+     * @param index Flattened board index (row * BOARD_SIZE + col)
      * @param colour 'R' for Red, 'B' for Blue, or '0' to clear.
      */
-    void set(int x, int y, char colour)
+    void set(int index, char colour)
     {
-        int index = y * BOARD_SIZE + x; // x is col, y is row
         if (colour == 'R')
         {
             red.set(index);
@@ -98,7 +96,31 @@ public:
     }
 
     /**
-     * @brief Check if a tile is occupied by either player.
+     * @brief Place a piece on the board (using coordinates).
+     *
+     * @param x Column index (0-10)
+     * @param y Row index (0-10)
+     * @param colour 'R' for Red, 'B' for Blue, or '0' to clear.
+     */
+    void set(int x, int y, char colour)
+    {
+        // Delegates to the index-based overload
+        set(y * BOARD_SIZE + x, colour);
+    }
+
+    /**
+     * @brief Check if a tile is occupied by either player (using direct index).
+     *
+     * @param index Flattened board index (row * BOARD_SIZE + col)
+     * @return true if occupied, false otherwise.
+     */
+    bool isOccupied(int index) const
+    {
+        return red.test(index) || blue.test(index);
+    }
+
+    /**
+     * @brief Check if a tile is occupied by either player (using coordinates).
      *
      * @param x Column index
      * @param y Row index
@@ -106,8 +128,20 @@ public:
      */
     bool isOccupied(int x, int y) const
     {
-        int index = y * BOARD_SIZE + x;
-        return red.test(index) || blue.test(index);
+        // Delegates to the index-based overload for consistency
+        return isOccupied(y * BOARD_SIZE + x);
+    }
+
+    /**
+     * @brief Get the piece at a specific location (using direct index).
+     * @param index Flattened board index
+     * @return 'R', 'B', or '0'
+     */
+    char get(int index) const
+    {
+        if (red.test(index)) return 'R';
+        if (blue.test(index)) return 'B';
+        return '0';
     }
 
     /**
@@ -120,10 +154,8 @@ public:
     char get(int x, int y) const
     {
         int index = y * BOARD_SIZE + x;
-        if (red.test(index))
-            return 'R';
-        if (blue.test(index))
-            return 'B';
+        if (red.test(index)) return 'R';
+        if (blue.test(index)) return 'B';
         return '0';
     }
 
@@ -135,48 +167,33 @@ public:
      */
     bool checkWinRed()
     {
-        // Simple DFS/Floodfill on the bitset
         bitset<NUM_TILES> visited;
-
-        // Use fixed-size array on the stack
         int stack[NUM_TILES];
         int stackSize = 0;
 
-        // Add all Red stones in the top row (y=0) to stack
-        for (int column = 0; column < BOARD_SIZE; ++column)
+        for (int i = 0; i < BOARD_SIZE; ++i) 
         {
-            // row 0 means index == column
-            if (red.test(column))
-            {
-                visited.set(column);
-                stack[stackSize++] = column;
-            }
+            if (red.test(i)) { visited.set(i); stack[stackSize++] = i; }
         }
 
         while (stackSize > 0)
         {
-            int currentIndex = stack[--stackSize]; // Pop from stack
+            int curr = stack[--stackSize];
+            
+            // Fast check for bottom row
+            if (curr >= NUM_TILES - BOARD_SIZE) return true;
 
-            // If we reached the bottom row (y=10), Red wins
-            if (currentIndex / BOARD_SIZE == BOARD_SIZE - 1)
-                return true;
-
-            // ULTRA-FAST NEIGHBOR LOOP
-            // No math, no boundary checks, just memory lookups
-            const auto &adj = ADJACENCY[currentIndex];
-
+            const auto &adj = ADJACENCY[curr];
             for (int i = 0; i < adj.count; ++i)
             {
-                int neighborIndex = adj.neighbors[i];
-
-                if (red.test(neighborIndex) && !visited.test(neighborIndex))
+                int n = adj.neighbors[i];
+                if (red.test(n) && !visited.test(n))
                 {
-                    visited.set(neighborIndex);
-                    stack[stackSize++] = neighborIndex;
+                    visited.set(n);
+                    stack[stackSize++] = n;
                 }
             }
         }
-        // After exploring all neighbors, if we haven't reached the bottom row, Red has not won
         return false;
     }
 
@@ -189,39 +206,30 @@ public:
     bool checkWinBlue()
     {
         bitset<NUM_TILES> visited;
-
         int stack[NUM_TILES];
         int stackSize = 0;
 
-        // Add all Blue stones in the left column (x=0)
-        for (int row = 0; row < BOARD_SIZE; ++row)
+        // Blue starts at Left Column: 0, 11, 22, 33...
+        for (int i = 0; i < NUM_TILES; i += BOARD_SIZE) 
         {
-            int index = row * BOARD_SIZE; // x=0
-            if (blue.test(index))
-            {
-                visited.set(index);
-                stack[stackSize++] = index;
-            }
+            if (blue.test(i)) { visited.set(i); stack[stackSize++] = i; }
         }
 
         while (stackSize > 0)
         {
-            int currentIndex = stack[--stackSize];
+            int curr = stack[--stackSize];
+            
+            // Logic: (curr % 11 == 10) -> (curr + 1) % 11 == 0
+            if ((curr + 1) % BOARD_SIZE == 0) return true;
 
-            // If we reached the right column (x=10), Blue wins
-            if (currentIndex % BOARD_SIZE == BOARD_SIZE - 1)
-                return true;
-
-            const auto &adj = ADJACENCY[currentIndex];
-
-            for (int i = 0; i < adj.count; i++)
+            const auto &adj = ADJACENCY[curr];
+            for (int i = 0; i < adj.count; ++i)
             {
-                int neighbourIndex = adj.neighbors[i];
-
-                if (blue.test(neighbourIndex) && !visited.test(neighbourIndex))
+                int n = adj.neighbors[i];
+                if (blue.test(n) && !visited.test(n))
                 {
-                    visited.set(neighbourIndex);
-                    stack[stackSize++] = neighbourIndex;
+                    visited.set(n);
+                    stack[stackSize++] = n;
                 }
             }
         }

@@ -1,0 +1,50 @@
+Regular
+===========================================
+      Hex Agent Speed Benchmark (NPS)      
+===========================================
+1. Warming up (500ms)... Done.
+2. Running Stress Test (5s)...
+-------------------------------------------
+Total Simulations: 1335297
+Total Time:        5.003 s
+-------------------------------------------
+Simulations/Sec:   266899
+-------------------------------------------
+
+Optimisation: Overloaded isOccupied and set
+===========================================
+      Hex Agent Speed Benchmark (NPS)      
+===========================================
+1. Warming up (500ms)... Done.
+2. Running Stress Test (5s)...
+-------------------------------------------
+Total Simulations: 1374209
+Total Time:        5.001 s
+-------------------------------------------
+Simulations/Sec:   274786
+
+Optimisation: Overloaded other bitboard methods, removed unecessary division/modulo operations, optimised Node.h
+===========================================
+      Hex Agent Speed Benchmark (NPS)      
+===========================================
+1. Warming up (500ms)... Done.
+2. Running Stress Test (5s)...
+-------------------------------------------
+Total Simulations: 2852865
+Total Time:        5.003 s
+-------------------------------------------
+Simulations/Sec:   570230
+-------------------------------------------
+
+Optimisation: Changed BoardSize to constexpr
+===========================================
+      Hex Agent Speed Benchmark (NPS)      
+===========================================
+1. Warming up (500ms)... Done.
+2. Running Stress Test (5s)...
+-------------------------------------------
+Total Simulations: 2723841
+Total Time:        5.002 s
+-------------------------------------------
+Simulations/Sec:   544550
+-------------------------------------------

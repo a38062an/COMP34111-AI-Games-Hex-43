@@ -33,16 +33,6 @@ $(BIN_DIR)/Experiment: $(EXP_DIR)/Experiment.cpp $(AGENT_SRCS)
 	@mkdir -p $(BIN_DIR)
 	$(CXX) $(CXXFLAGS) -o $@ $^
 
-# Experiment without Memory Pool or Transposition Table
-$(BIN_DIR)/ExperimentBase: $(EXP_DIR)/Experiment.cpp $(AGENT_SRCS)
-	@mkdir -p $(BIN_DIR)
-	$(CXX) $(CXXFLAGS) -DNO_POOL -DNO_TT -o $@ $^
-
-# Experiment without Transposition Table only
-$(BIN_DIR)/ExperimentNoTT: $(EXP_DIR)/Experiment.cpp $(AGENT_SRCS)
-	@mkdir -p $(BIN_DIR)
-	$(CXX) $(CXXFLAGS) -DNO_TT -o $@ $^
-
 # --- Utilities ---
 
 clean:

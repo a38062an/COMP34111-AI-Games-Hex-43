@@ -6,161 +6,50 @@
 
 using namespace std;
 
-// ==========================================
-// CONFIGURATION
-// ==========================================
-const int TIME_LIMIT_MS = 500;     // Time per move (Lower this for mass testing, e.g., 50ms)
-const int NUM_GAMES = 20;         // Total games to run
-const double RAVE_CONST = 1000.0; // RAVE parameter 'k'
-const double UCT_CONST = 1.414;   // UCT parameter 'c'
+// This global variable must exist in your MCTS.cpp (as seen in your previous code)
+extern long long g_nodeCount;
 
-// ==========================================
-// BENCHMARKING (Nodes Per Second)
-// ==========================================
-void runNPSBenchmark()
-{
-    cout << "--------------------------------------" << endl;
-    cout << "Running Speed Benchmark (NPS)..." << endl;
-
-    // 1. Warmup (Get CPU cache hot)
-    Bitboard board;
-    MCTS mcts(board, 'R', 1.414, 0.0);
-    mcts.runSearch(200); // Short warmup
-
-    // 2. Actual Measure
-    extern long long g_nodeCount;
-    g_nodeCount = 0;
-
-    auto start = chrono::high_resolution_clock::now();
-    mcts.runSearch(1000); // Run for exactly 1 second
-    auto end = chrono::high_resolution_clock::now();
-
-    auto duration = chrono::duration_cast<chrono::milliseconds>(end - start).count();
-
-    cout << "Time Elapsed:   " << duration << "ms" << endl;
-    cout << "Nodes Expanded: " << g_nodeCount << endl;
-    cout << "NPS Score:      " << (g_nodeCount * 1000) / duration << endl;
-    cout << "--------------------------------------" << endl
-         << endl;
-}
-
-// ==========================================
-// EXPERIMENT RUNNER
-// ==========================================
 int main()
 {
-    // CRITICAL: Initialize lookup tables before anything else
+    // 1. Critical Setup
     Bitboard::initTables();
+    cout << "===========================================" << endl;
+    cout << "      Hex Agent Speed Benchmark (NPS)      " << endl;
+    cout << "===========================================" << endl;
 
-    // 1. Run Speed Test
-    runNPSBenchmark();
+    // 2. Setup Board and Agent
+    Bitboard board; // Empty Board
+    // Parameters: 'R' (Red), C=1.414, RAVE_K=1000 (Standard optimized settings)
+    MCTS mcts(board, 'R', 1.414, 1000.0);
 
-    // 2. Setup Tournament
-    int raveWins = 0;
-    int uctWins = 0;
+    // 3. Warmup Phase
+    // (Runs for 500ms to ensure caches are hot and memory pool is active)
+    cout << "1. Warming up (500ms)..." << flush;
+    mcts.runSearch(500); 
+    cout << " Done." << endl;
 
-    cout << "Starting Tournament: RAVE (" << RAVE_CONST << ") vs UCT (0.0)" << endl;
-    cout << "Games: " << NUM_GAMES << " | Time/Move: " << TIME_LIMIT_MS << "ms" << endl;
+    // 4. Reset Counters
+    g_nodeCount = 0;
+    int benchmarkDurationMs = 5000; // Run for 5 seconds for stability
 
-#ifdef NO_POOL
-    cout << "Build: UNOPTIMIZED (Standard new/delete)" << endl;
-#else
-    cout << "Build: OPTIMIZED (Memory Pool + TT)" << endl;
-#endif
+    // 5. The Benchmark
+    cout << "2. Running Stress Test (" << benchmarkDurationMs / 1000 << "s)..." << endl;
+    
+    auto start = chrono::high_resolution_clock::now();
+    mcts.runSearch(benchmarkDurationMs);
+    auto end = chrono::high_resolution_clock::now();
 
-    cout << "--------------------------------------" << endl;
-    // CSV Header for easy data processing later
-    cout << "GameID,RedPlayer,BluePlayer,Winner,Moves,TTHits,TotalSimulations,TotalDuration" << endl;
+    // 6. Calculate Results
+    auto duration = chrono::duration_cast<chrono::milliseconds>(end - start).count();
+    double seconds = duration / 1000.0;
+    long long nps = (long long)(g_nodeCount / seconds);
 
-    for (int game = 1; game <= NUM_GAMES; ++game)
-    {
-// Reset Shared Resources
-#ifndef NO_TT
-        MCTS::tt.clear();
-#endif
-
-        Bitboard board;
-        char turn = 'R';
-        int moves = 0;
-        long long totalSimulations = 0;
-        long long totalDuration = 0;
-
-        // Swap roles every game to ensure fairness (Red advantage)
-        // Odd Games: Red=RAVE, Blue=UCT
-        // Even Games: Red=UCT, Blue=RAVE
-        bool raveIsRed = (game % 2 != 0);
-        string redName = raveIsRed ? "RAVE" : "UCT";
-        string blueName = raveIsRed ? "UCT" : "RAVE";
-
-        while (true)
-        {
-            // 1. Check Win
-            if (board.checkWinRed())
-            {
-                (raveIsRed) ? raveWins++ : uctWins++;
-                cout << game << "," << redName << "," << blueName << ",Red," << moves;
-                break;
-            }
-            if (board.checkWinBlue())
-            {
-                (!raveIsRed) ? raveWins++ : uctWins++;
-                cout << game << "," << redName << "," << blueName << ",Blue," << moves;
-                break;
-            }
-
-            // 2. Determine Strategy for Current Player
-            double currentRaveK = 0.0;
-            if (turn == 'R')
-            {
-                currentRaveK = (redName == "RAVE") ? RAVE_CONST : 0.0;
-            }
-            else
-            {
-                currentRaveK = (blueName == "RAVE") ? RAVE_CONST : 0.0;
-            }
-
-            // 3. Run MCTS
-            // Note: In a real game, we would reuse the tree.
-            // Here we rebuild to test raw search power from scratch.
-            auto startSearch = chrono::high_resolution_clock::now();
-            MCTS mcts(board, turn, UCT_CONST, currentRaveK);
-            MCTS::SearchResult result = mcts.runSearch(TIME_LIMIT_MS);
-            auto endSearch = chrono::high_resolution_clock::now();
-            auto duration = chrono::duration_cast<chrono::milliseconds>(endSearch - startSearch).count();
-            
-            pair<int, int> move = result.move;
-            totalSimulations += result.iterations;
-            totalDuration += duration;
-            
-            // 4. Handle Draw/No Moves (Should typically not happen in Hex)
-            if (move.first == -1)
-            {
-                cout << game << "," << redName << "," << blueName << ",Draw," << moves;
-                break;
-            }
-
-            // 5. Apply Move
-            board.set(move.first, move.second, turn);
-            turn = (turn == 'R') ? 'B' : 'R';
-            moves++;
-        }
-
-#ifndef NO_TT
-        cout << "," << MCTS::tt.ttHits << "," << totalSimulations << "," << totalDuration << endl;
-#else
-        cout << ",0," << totalSimulations << "," << totalDuration << endl;
-#endif
-    }
-
-    // ==========================================
-    // FINAL REPORT
-    // ==========================================
-    cout << "--------------------------------------" << endl;
-    cout << "FINAL RESULTS" << endl;
-    cout << "--------------------------------------" << endl;
-    cout << fixed << setprecision(2);
-    cout << "RAVE Wins: " << raveWins << " (" << (double)raveWins / NUM_GAMES * 100.0 << "%)" << endl;
-    cout << "UCT Wins:  " << uctWins << " (" << (double)uctWins / NUM_GAMES * 100.0 << "%)" << endl;
+    cout << "-------------------------------------------" << endl;
+    cout << "Total Simulations: " << g_nodeCount << endl;
+    cout << "Total Time:        " << seconds << " s" << endl;
+    cout << "-------------------------------------------" << endl;
+    cout << "Simulations/Sec:   " << nps << endl;
+    cout << "-------------------------------------------" << endl;
 
     return 0;
 }

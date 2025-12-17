@@ -32,11 +32,11 @@ int main(int argc, char *argv[])
     }
 
     char colour = argv[1][0];
-    int size = stoi(argv[2]);
 
     Bitboard::initTables();
 
-    HexAgent agent(colour, size);
+    // Discard board size. Assume 11x11
+    HexAgent agent(colour);
     agent.run();
 
     return 0;

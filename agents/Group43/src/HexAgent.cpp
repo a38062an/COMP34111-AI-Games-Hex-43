@@ -1,10 +1,10 @@
 #include "HexAgent.h"
+#include "sstream"
 
 using namespace std;
 
-HexAgent::HexAgent(char colour, int size) 
+HexAgent::HexAgent(char colour) 
     : myColour{colour}
-    , boardSize{size} 
 {
     srand(time(0));
 }
@@ -77,7 +77,7 @@ void HexAgent::parseBoard(const string& boardString)
     while (getline(stringStream, rowString, ',')) 
     {
         board.push_back(rowString);
-        for (int column = 0; column < boardSize; ++column) 
+        for (int column = 0; column < BOARD_SIZE; ++column) 
         {
             bitboard.set(column, row, rowString[column]);
         }
@@ -101,9 +101,9 @@ Point HexAgent::makeMove()
     }
 
     // Fallback (should not be reached if MCTS works)
-    for (int row = 0; row < boardSize; ++row) 
+    for (int row = 0; row < BOARD_SIZE; ++row) 
     {
-        for (int column = 0; column < boardSize; ++column) 
+        for (int column = 0; column < BOARD_SIZE; ++column) 
         {
             if (board[row][column] == '0') 
             {
