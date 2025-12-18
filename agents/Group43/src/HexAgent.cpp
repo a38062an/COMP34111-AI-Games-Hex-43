@@ -6,12 +6,13 @@
 using namespace std;
 namespace fs = std::filesystem;
 
-HexAgent::HexAgent(char colour) 
-    : myColour{colour}
+HexAgent::HexAgent(char colour, bool useCNN, int timeLimitMs) 
+    : myColour{colour}, useCNN{useCNN}, timeLimitMs{timeLimitMs}
 {
     srand(time(0));
 
-    // List of places to look for the model
+    if (useCNN) {
+        // List of places to look for the model
     vector<string> candidatePaths = {
         "src/checkpoints/hex_model.pt",                 // If running from agents/Group43/
         "agents/Group43/src/checkpoints/hex_model.pt",  // If running from Project Root
@@ -52,6 +53,9 @@ HexAgent::HexAgent(char colour)
     catch (const c10::Error& e) {
         std::cerr << "Error loading model: " << e.msg() << std::endl;
         exit(1);
+    }
+    } else {
+        std::cerr << "CNN Disabled. Running in Baseline Mode." << std::endl;
     }
 }
 
@@ -134,11 +138,15 @@ void HexAgent::parseBoard(const string& boardString)
 Point HexAgent::makeMove() 
 {
     // Use MCTS to decide move
-    // Time limit: 4 second (4000ms) for now
+    // Dynamic time limit from constructor
     // TODO: Dynamic time management based on remaining time
     
-    MCTS mcts(bitboard, myColour, &module);
-    MCTS::SearchResult result = mcts.runSearch(4000);
+    // Pass module pointer if useCNN is true, otherwise nullptr
+    // Restore RAVE: We want to see if CNN+RAVE > RAVE (Baseline).
+    // Note: If CNN is slow, RAVE-only might win purely on speed.
+    double raveConst = 1000.0;
+    MCTS mcts(bitboard, myColour, useCNN ? &module : nullptr, 1.414, raveConst);
+    MCTS::SearchResult result = mcts.runSearch(timeLimitMs);
     pair<int, int> bestMove = result.move;
 
     if (bestMove.first != -1) 

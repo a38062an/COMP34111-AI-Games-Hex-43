@@ -49,6 +49,11 @@ public:
     {
     }
 
+    // Helper to check if we are using CNN
+    bool useCNN() const {
+        return module != nullptr;
+    }
+
     /**
      * @brief Run the MCTS search for a specified time duration.
      *

@@ -151,7 +151,7 @@ Node *MCTS::select(Node *node, Bitboard &board)
 {
     while (node->isFullyExpanded() && !node->children.empty())
     {
-        node = node->bestChild(explorationConstant, raveConstant);
+        node = node->bestChild(explorationConstant, raveConstant, useCNN());
         // OPTIMIZATION: Use index overload directly
         board.set(node->moveIndex, node->colour);
     }
@@ -165,8 +165,9 @@ Node *MCTS::expand(Node *node, Bitboard &board)
         return nullptr;
 
     // 0. Evaluation (Policy Integration)
-    // If this node hasn't been evaluated by the network yet, do it now.
-    if (!node->evaluated)
+    // 0. Evaluation (Policy Integration)
+    // If we are using CNN and this node hasn't been evaluated yet
+    if (useCNN() && !node->evaluated)
     {
         // Whose turn is it at this node? The opponent of the person who just moved.
         char nextTurn = getOpponent(node->colour);
@@ -392,9 +393,29 @@ std::vector<float> MCTS::evaluate(const Bitboard& board, char currentTurn)
         policyLogits = output.toTensor();
     }
 
+    // 3.5. Legal Move Masking
+    // CRITICAL FIX: The model predicts occupied squares (e.g. [0,8]) with high confidence.
+    // We must mask these out so probability mass is distributed among VALID moves.
+    auto logits_accessor = policyLogits.accessor<float, 2>(); // (1, 121) if unsqueezed or (121)
+    // Adjust accessor depending on shape. forward() result depends on model. 
+    // We flattened earlier? No, policyLogits comes from output. 
+    // Usually (Batch, 121). 
+    
+    // Let's assume (1, 121) or (121). Safe way is flat access.
+    float* logits_ptr = policyLogits.data_ptr<float>();
+    
+    for (int i = 0; i < NUM_TILES; ++i) {
+        if (board.isOccupied(i)) {
+            logits_ptr[i] = -1e9; // Negative Infinity
+        }
+    }
+
     // 4. Post-processing
-    // Apply Softmax to get probabilities
-    torch::Tensor policyProbss = torch::softmax(policyLogits, 1); // dim 1
+    // Apply Temperature Scaling to Flatten the Distribution
+    // The current model is overconfident (99.9%), which kills MCTS exploration.
+    // T > 1.0 softens the distribution.
+    float temperature = 2.5f; 
+    torch::Tensor policyProbss = torch::softmax(policyLogits / temperature, 1); // dim 1
     
     // Extract to std::vector
     // Flatten first: (1, 121) -> (121)
@@ -402,5 +423,7 @@ std::vector<float> MCTS::evaluate(const Bitboard& board, char currentTurn)
     
     std::vector<float> policyVec(policyProbss.data_ptr<float>(), policyProbss.data_ptr<float>() + policyProbss.numel());
     
+    return policyVec;
+
     return policyVec;
 }

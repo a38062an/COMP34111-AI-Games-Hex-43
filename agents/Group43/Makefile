@@ -11,7 +11,7 @@ CXX = g++
 
 # Directories
 SRC_DIR = src
-EXP_DIR = experiments
+EXP_DIR = benchmarks
 BIN_DIR = bin
 
 # Compiler Flags
@@ -43,6 +43,9 @@ $(BIN_DIR)/DevAgent: $(SRC_DIR)/CppAgent.cpp $(AGENT_SRCS)
 $(BIN_DIR)/SPS: $(EXP_DIR)/SPS.cpp $(AGENT_SRCS)
 	@mkdir -p $(BIN_DIR)
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(TORCH_LIBS) $(mac_RPATH)
+
+benchmark: $(BIN_DIR)/SPS
+	./$(BIN_DIR)/SPS
 
 # --- Utilities ---
 

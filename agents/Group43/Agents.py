@@ -91,24 +91,38 @@ class Group43AgentBase(AgentBase):
 
 # --- AGENT DEFINITIONS ---
 
-class BaselineAgent(Group43AgentBase):
+class Group43Agent(Group43AgentBase):
     """
-    The Stable/Master version. 
-    Uses 'bin/CppAgent' (Compiled via 'make' on main branch).
+    The Main/Tournament version. 
+    Current Config: BASELINE MODE (RAVE + UCT) for Maximum Performance.
+    (CNN interactions are disabled for the competition).
     """
     def __init__(self, colour: Colour):
         super().__init__(
             colour, 
-            binary_name="bin/CppAgent"
+            binary_name="bin/CppAgent",
+            extra_args=["--no-cnn", "--time", "5000"]
         )
 
-class ExperimentalAgent(Group43AgentBase):
+class Group43Experimental(Group43AgentBase):
     """
-    The Feature/Dev version.
-    Uses 'bin/DevAgent' (Compiled via 'make dev' on feature branch).
+    The Experimental CNN version.
+    Uses Neural Network for search guidance.
+    """
+    def __init__(self, colour: Colour):
+        super().__init__(
+            colour, 
+            binary_name="bin/CppAgent",
+            extra_args=["--time", "5000"]
+        )
+
+class Group43Baseline(Group43AgentBase):
+    """
+    The Baseline version.
     """
     def __init__(self, colour: Colour):
         super().__init__(
             colour,
-            binary_name="bin/DevAgent"
+            binary_name="bin/CppAgent",
+            extra_args=["--no-cnn", "--time", "5000"]
         )

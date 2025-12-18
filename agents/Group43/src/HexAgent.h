@@ -30,7 +30,14 @@ public:
      *
      * @param colour The agent's colour ('R' or 'B').
      */
-    HexAgent(char colour);
+    /**
+     * @brief Construct a new Hex Agent.
+     *
+     * @param colour The agent's colour ('R' or 'B').
+     * @param useCNN Whether to load and use the Neural Network.
+     * @param timeLimitMs Time limit per move in milliseconds.
+     */
+    HexAgent(char colour, bool useCNN = true, int timeLimitMs = 4000);
 
     /**
      * @brief Main loop of the agent.
@@ -42,6 +49,8 @@ public:
 
 private:
     char myColour;        ///< The agent's assigned colour
+    bool useCNN;          ///< Flag to enable/disable NN
+    int timeLimitMs;      ///< Time limit per move
     vector<string> board; ///< String representation of the board (for debugging/printing)
     Bitboard bitboard;    ///< Efficient bitset representation for MCTS
     torch::jit::script::Module module; ///< The neural network model

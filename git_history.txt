@@ -1,0 +1,117 @@
+*   d3366a0|alexmote|2025-12-18 16:13:53 +0000|Fixed dev|
+|\  
+| * 13a6d52|Alexios Philalithis|2025-12-18 14:54:40 +0000|feat: Integrate PyTorch model for neural network policy evaluation into MCTS, updating node selection with PUCT and RAVE.|
+| * 2ff8bef|Alexios Philalithis|2025-12-18 13:55:44 +0000|feat: Add `MCTS::evaluate` method and its implementation for neural network board state evaluation.|
+| * 7541f7e|Alexios Philalithis|2025-12-18 13:03:04 +0000|feat: Enable neural network integration for MCTS by updating the build process, model loading, and node data structure.|
+| *   a8a152d|Alexios Philalithis|2025-12-18 12:38:03 +0000|Merge branch 'CNN' into dev|
+| |\  
+| | * ec2722d|Alexios Philalithis|2025-12-18 11:34:14 +0000|feat: Integrate LibTorch model into HexAgent and MCTS, update HPC training script for GPU, and remove old experiment files.|
+* | | 51f1eda|alexmote|2025-12-18 14:37:39 +0000|Added benchmarking featuers|
+* | | 8016c44|alexmote|2025-12-18 14:36:16 +0000|Added benchmarking features|
+|/ /  
+* | bd732ce|alexmote|2025-12-17 19:35:07 +0000|Heavily optimised and started working on heavy rollouts|
+| | * 6e71b23|Joshua M|2025-12-18 05:37:00 +0000|fix: cleaner class implementation|
+| | * 56f9b21|Joshua M|2025-12-18 05:22:11 +0000|feat: added recursive VC detection|
+| | * c08820d|Joshua M|2025-12-17 10:08:06 +0000|feat: add H-Search basic tests|
+| | * 0206ddc|Joshua M|2025-12-17 09:47:49 +0000|feat: add H-Search basic tests|
+| | * 8d9f842|Joshua M|2025-12-17 04:33:44 +0000|feat: add H-Search tactical solver scaffolding|
+| |/  
+| * bfec12f|Alexios Philalithis|2025-12-16 15:00:38 +0000|feat: Migrate to new hex dataset, add training, data unpacking, and model export scripts, and update model and dataset implementations.|
+| * 8eeaff3|Alexios Philalithis|2025-12-16 12:41:30 +0000|feat: Add SGF data processing, feature generation, and board state visualization scripts.|
+| * 3a39ada|Alexios Philalithis|2025-12-10 14:02:15 +0000|feat: Add self-play logs, configuration, and training data files, and modify the model implementation to add 2 more residual blocks|
+| * 4c92c66|Alexios Philalithis|2025-12-10 13:39:46 +0000|feat: Add initial Hex policy prediction model, verification script, and CNN implementation documentation, updating gitignore.|
+| * 4955900|Alexios Philalithis|2025-12-10 13:39:13 +0000|feat: Add CNN implementation plan, model source code, and project documentation, alongside development environment configuration updates.|
+| | * ea7ba41|a38062an|2025-12-16 19:08:42 +0000|feat: Add dynamic time management with 4-layer safety for tournament play|Implements robust time allocation system that divides remaining time by
+| |/  remaining moves with comprehensive timeout protection.
+|/|   
+| |   Key Changes:
+| |   - Dynamic time calculation based on agent's own moves (not total board moves)
+| |   - 5-minute tournament budget (300 seconds per agent)
+| |   - 10-second buffer for Python subprocess communication overhead
+| |   - 10% safety margin on all time allocations (multiply by 0.9)
+| |   - Time checks every 256 MCTS iterations (4x faster than default)
+| |   - 100ms early-stop in MCTS loop to prevent overshoot
+| |   
+| |   Safety Analysis:
+| |   - Four protection layers eliminate timeout risk
+| |   - Worst-case scenario: 2.8s safety margin remaining
+| |   - Expected utilization: 250-270s (83-90% of budget)
+| |   - Typical performance: 2M+ MCTS iterations per move
+| |   
+| |   Files Modified:
+| |   - src/HexAgent.cpp: calculateTimeLimit() with move counting fix
+| |   - src/HexAgent.h: Updated TimeConfig (300s total, 10s buffer)
+| |   - src/MCTS.cpp: Enhanced time checking (256 iter, 100ms early-stop)
+| |   - README.md: Updated time management section
+| |   - docs/TIME_MANAGEMENT.md: Complete safety documentation
+| |   
+| |   Tested: Self-play confirms proper time usage without timeouts
+| | 
+* | 509fb5e|a38062an|2025-12-07 21:49:58 +0000|feat: Add simulation and SPS metrics to experiment logging and plotting, update experiment time limit, and refresh performance visualizations.|
+* | 93e93fc|alexmote|2025-12-07 17:53:10 +0000|Forgot to track some files|
+* | acd4504|alexmote|2025-12-07 17:50:45 +0000|Further optimisation|
+* | 2875efb|alexmote|2025-12-07 15:25:16 +0000|Optimised and refactored code|
+* | fd5dd81|alexmote|2025-12-06 21:31:51 +0000|Simplified ExternalAgent.py|
+|/  
+* 8e69bbb|a38062an|2025-12-05 10:39:57 +0000|chore: remove unused `deque` include and delete `docs/README.md`.|
+* 31ad014|a38062an|2025-12-04 22:46:43 +0000|Feature: Optimize MCTS with TT, Pool, and RAVE + Benchmarking Suite|Major architectural upgrades to the Hex Agent to improve playing strength and search efficiency.
+| 
+| Key Changes:
+| - Implemented Transposition Table (TT) with Zobrist Hashing to cache search states and handle transpositions.
+| - Implemented Linear Memory Pool ([NodePool] to eliminate `new/delete` overhead and improve cache locality.
+| - Integrated RAVE (Rapid Action Value Estimation) to guide the search with "All-Moves-As-First" heuristics.
+| - Created automated benchmarking pipeline to verify improvements.
+| - Reorganized project structure: moved documentation to `docs/` and benchmark results to `results/`.
+| - Updated [optimizations.md] with empirical evidence (TT doubles UCT win rate from 24% to 47%).
+| 
+| TODO:
+| 1. Add dynamic time usage per move (currently fixed 4s).
+| 2. Add heuristics to simulation (e.g., bridge patterns) to improve rollout quality.
+| 3. Implement Pondering (search during opponent's turn) to maximize CPU utilization.
+| 
+* 49e84c5|a38062an|2025-12-03 22:08:31 +0000|feat(agent): optimize MCTS and fix stability issues|- Implement robust SWAP (Pie Rule) handling in HexAgent.cpp to correctly switch colors.
+| - Optimize Node storage by using int16_t for move lists (4x memory reduction).
+| - Revert custom Memory Pool implementation to std::unique_ptr due to stability issues (crashes/freezes).
+| - Add safety checks and time management to MCTS search loop.
+| - Consolidate documentation into a single README.md and add a detailed code walkthrough.
+| - Fix simulation loop correctness.
+| 
+| Verified with full self-play matches (25+ turns) and vs NaiveAgent.
+| 
+* 46e27c3|a38062an|2025-12-02 20:55:44 +0000|Initial commit: C++ MCTS Hex Agent|- Implemented core MCTS engine in C++ (MCTS.cpp, MCTS.h, Node.h).
+| - Implemented efficient Bitboard representation (Bitboard.h).
+| - Implemented Hex Agent protocol handler (HexAgent.cpp, HexAgent.h).
+| - Added Python wrapper for tournament compatibility (ExternalAgent.py).
+| - Added Dockerfile with build-essential for containerized execution.
+| - Added comprehensive documentation (README.md, PROTOCOL.md, ARCHITECTURE.md).
+| - Added docstrings to all source files.
+| - Verified agent functionality against NaiveAgent (Win) on docker.
+| 
+* a1ef26b|a38062an|2025-11-26 20:48:35 +0000|docs: elaborate on Heuristic Evaluator logic and add references for the architecture.|
+* e6da7d1|a38062an|2025-11-26 17:21:20 +0000|docs: Rewrite architecture to detail dual-mode C++ engine with pluggable evaluators and multithreaded MCTS, and add task documentation.|
+* 2562b5b|a38062an|2025-11-22 14:36:17 +0000|feat: Document project architecture, update Dockerfile base image to Ubuntu 22.04, and add bash history as well as `ARCHITECTURE.md`.|
+| *   27ced1c|Alexios Philalithis|2025-12-05 11:30:27 +0000|On main: Docker change|
+|/|\  
+| | * 68f61e7|Alexios Philalithis|2025-12-05 11:30:27 +0000|untracked files on main: 014b6d3 Merge pull request #10 from a-w-c/fix-external-agent|
+| * ffef0bf|Alexios Philalithis|2025-12-05 11:30:27 +0000|index on main: 014b6d3 Merge pull request #10 from a-w-c/fix-external-agent|
+|/  
+*   014b6d3|Mohsen|2025-11-14 14:58:55 +0000|Merge pull request #10 from a-w-c/fix-external-agent|Fix bugs for external agent
+|\  
+| * 6dad846|Archie Calder|2025-11-13 20:15:17 +0000|Fix bugs for external agent|
+|/  
+* bee3197|Mohsen|2025-11-13 13:48:19 +0000|Fix bug with pwd command when running the container|
+* b0befeb|Mohsen Fatehifar|2025-09-19 09:38:01 +0100|updated for 2025 class|
+*   200cbe8|Mingfei|2024-12-08 17:32:50 +0000|Merge pull request #5 from mingfeisun/mcts-agent|add mcts agent
+|\  
+| * 9afd206|mingfeisun|2024-12-08 17:32:15 +0000|add mcts agent|
+* |   22b2220|Mingfei|2024-11-12 13:14:59 +0000|Merge pull request #2 from tcassar/main|Fix Docker image failing to build
+|\ \  
+| |/  
+|/|   
+| * 320cb76|Tom Cassar|2024-11-12 12:58:26 +0000|Fix Docker image failing to build|- Add missing `-y` in Dockerfile
+|/  
+| 
+* faaf1bb|mingfeisun|2024-11-11 23:36:46 +0000|add github flow|
+* 009ff7d|mingfeisun|2024-11-11 22:46:36 +0000|add qr code|
+* 52c0c2d|mingfeisun|2024-11-11 22:40:44 +0000|update readme|
+* e606bea|mingfeisun|2024-11-11 22:34:09 +0000|init|

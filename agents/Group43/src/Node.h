@@ -63,13 +63,16 @@ struct Node
         return remainingMoves == 0;
     }
 
-    Node *bestChild(double explorationConstant = 1.414, double raveConstant = 1000.0)
+    Node *bestChild(double explorationConstant = 1.414, double raveConstant = 1000.0, bool usePUCT = true)
     {
         Node *best = nullptr;
         double bestValue = -numeric_limits<double>::infinity();
 
-        // Add epsilon to avoid log(0)
-        // double logParentVisits = log(this->visits + 1e-6); // Not used in PUCT
+        // Precompute log for UCT (standard MCTS)
+        double logParentVisits = 0.0;
+        if (!usePUCT) {
+             logParentVisits = log(this->visits + 1e-6);
+        }
 
         for (Node *child : children)
         {
@@ -77,11 +80,22 @@ struct Node
             if (child->visits == 0)
                 return child;
 
-            // PUCT Part (AlphaZero Style)
-            // Q(s,a) + c_puct * P(s,a) * sqrt(ParentVisits) / (1 + childVisits)
+            // Q Value (Exploitation)
             double qValue = child->wins / child->visits;
-            double uValue = explorationConstant * child->prior * sqrt(this->visits) / (1.0 + child->visits);
-            double puctValue = qValue + uValue;
+            
+            double uctOrPuctValue = 0.0;
+
+            if (usePUCT) {
+                // PUCT (AlphaZero Style)
+                // c_puct * P(s,a) * sqrt(ParentVisits) / (1 + childVisits)
+                double uValue = explorationConstant * child->prior * sqrt(this->visits) / (1.0 + child->visits);
+                uctOrPuctValue = qValue + uValue;
+            } else {
+                // Standard UCT
+                // c * sqrt(log(ParentVisits) / childVisits)
+                double uValue = explorationConstant * sqrt(logParentVisits / child->visits);
+                uctOrPuctValue = qValue + uValue;
+            }
 
             // RAVE Part (AMAF)
             double raveValue = 0.0;
@@ -93,8 +107,8 @@ struct Node
             // Beta Calculation (RAVE weight decreases as visits increase)
             double beta = sqrt(raveConstant / (3 * visits + raveConstant));
 
-            // Hybrid Score: (1 - beta) * PUCT + beta * RAVE
-            double score = (1.0 - beta) * puctValue + beta * raveValue;
+            // Hybrid Score: (1 - beta) * Method + beta * RAVE
+            double score = (1.0 - beta) * uctOrPuctValue + beta * raveValue;
 
             if (score > bestValue)
             {
