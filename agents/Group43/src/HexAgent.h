@@ -10,6 +10,7 @@
 
 #include "Bitboard.h"
 #include "MCTS.h"
+#include <torch/script.h> // LibTorch header
 
 using namespace std;
 
@@ -52,6 +53,7 @@ private:
     int boardSize;          ///< The size of the board (e.g., 11)
     vector<string> board;   ///< String representation of the board (for debugging/printing)
     Bitboard bitboard;      ///< Efficient bitset representation for MCTS
+    torch::jit::script::Module module; ///< The neural network model
 
     /**
      * @brief Print the current board state to stderr for debugging.
