@@ -214,3 +214,13 @@ private:
 
     FastRNG rng;
 };
+
+private:
+    /**
+     * @brief Evaluates the board using the Neural Network.
+     * 
+     * @param board The current board state.
+     * @param currentTurn The player whose turn it is.
+     * @return std::vector<float> A 121-element probability vector (Policy).
+     */
+    std::vector<float> evaluate(const Bitboard& board, char currentTurn);
