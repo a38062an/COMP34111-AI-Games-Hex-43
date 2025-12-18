@@ -1,6 +1,7 @@
 import argparse
 import sys
 import os
+import importlib
 
 # ---------------------------------------------------------------------
 # PATH SETUP
@@ -13,33 +14,44 @@ if project_root not in sys.path:
 from src.Colour import Colour
 from src.GameOptimised import Game
 from src.Player import Player
-from agents.Group43.Agents import BaselineAgent, ExperimentalAgent
 
-def run_tournament(num_games, verbose=False):
-    baseline_wins = 0
-    experimental_wins = 0
+def get_class(kls):
+    parts = kls.split('.')
+    module = ".".join(parts[:-1])
+    m = importlib.import_module(module)
+    return getattr(m, parts[-1])
 
-    print("Starting Tournament: Baseline vs Experimental")
+def run_tournament(num_games, agent1_path, agent2_path, verbose=False):
+    Agent1Class = get_class(agent1_path)
+    Agent2Class = get_class(agent2_path)
+
+    agent1_wins = 0
+    agent2_wins = 0
+    
+    # Extract short names for display
+    name1 = agent1_path.split('.')[-1]
+    name2 = agent2_path.split('.')[-1]
+
+    print(f"Starting Tournament: {name1} vs {name2}")
     print(f"Total Games: {num_games}")
     print("---------------------------------------------------")
 
     for i in range(1, num_games + 1):
         # Swap sides every game to ensure fairness
-        baseline_is_red = (i % 2 != 0)
+        agent1_is_red = (i % 2 != 0)
 
-        if baseline_is_red:
-            p1_agent = BaselineAgent(Colour.RED)
-            p1_name  = "Baseline (Red)"
-            p2_agent = ExperimentalAgent(Colour.BLUE)
-            p2_name  = "Experimental (Blue)"
+        if agent1_is_red:
+            p1_agent = Agent1Class(Colour.RED, time_limit_ms=180000)
+            p1_name  = f"{name1} (Red)"
+            p2_agent = Agent2Class(Colour.BLUE, time_limit_ms=180000)
+            p2_name  = f"{name2} (Blue)"
         else:
-            p1_agent = ExperimentalAgent(Colour.RED)
-            p1_name  = "Experimental (Red)"
-            p2_agent = BaselineAgent(Colour.BLUE)
-            p2_name  = "Baseline (Blue)"
+            p1_agent = Agent2Class(Colour.RED, time_limit_ms=180000)
+            p1_name  = f"{name2} (Red)"
+            p2_agent = Agent1Class(Colour.BLUE, time_limit_ms=180000)
+            p2_name  = f"{name1} (Blue)"
 
         # Initialize Game
-        # FIX: Use os.devnull instead of None to safely disable logging
         game = Game(
             player1=Player(p1_name, p1_agent),
             player2=Player(p2_name, p2_agent),
@@ -56,19 +68,19 @@ def run_tournament(num_games, verbose=False):
 
         # Determine who won
         if winner_colour == Colour.RED:
-            if baseline_is_red:
-                baseline_wins += 1
-                winner_name = "Baseline"
+            if agent1_is_red:
+                agent1_wins += 1
+                winner_name = name1
             else:
-                experimental_wins += 1
-                winner_name = "Experimental"
+                agent2_wins += 1
+                winner_name = name2
         else:
-            if not baseline_is_red:
-                baseline_wins += 1
-                winner_name = "Baseline"
+            if not agent1_is_red:
+                agent1_wins += 1
+                winner_name = name1
             else:
-                experimental_wins += 1
-                winner_name = "Experimental"
+                agent2_wins += 1
+                winner_name = name2
 
         if verbose:
             print(f"Game {i} Winner: {winner_name}")
@@ -79,15 +91,17 @@ def run_tournament(num_games, verbose=False):
     print("TOURNAMENT RESULTS")
     print("---------------------------------------------------")
     print(f"Total Games: {num_games}")
-    print(f"Baseline Wins:     {baseline_wins} ({(baseline_wins/num_games)*100:.2f}%)")
-    print(f"Experimental Wins: {experimental_wins} ({(experimental_wins/num_games)*100:.2f}%)")
+    print(f"{name1}: {agent1_wins} ({(agent1_wins/num_games)*100:.2f}%)")
+    print(f"{name2}: {agent2_wins} ({(agent2_wins/num_games)*100:.2f}%)")
     print("---------------------------------------------------")
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Run a tournament between Baseline and Experimental agents.")
-    parser.add_argument("games", type=int, help="Number of games to play")
+    parser = argparse.ArgumentParser(description="Run a tournament between two agents.")
+    parser.add_argument("--games", type=int, default=10, help="Number of games to play")
+    parser.add_argument("--agent1", type=str, required=True, help="Classpath for Agent 1 (e.g., agents.Group43.Agents.SwapAgent)")
+    parser.add_argument("--agent2", type=str, required=True, help="Classpath for Agent 2 (e.g., agents.Group43.Agents.NoSwapAgent)")
     parser.add_argument("-v", "--verbose", action="store_true", help="Show move-by-move output")
 
     args = parser.parse_args()
 
-    run_tournament(args.games, args.verbose)
+    run_tournament(args.games, args.agent1, args.agent2, args.verbose)
