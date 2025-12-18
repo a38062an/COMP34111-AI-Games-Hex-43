@@ -6,10 +6,15 @@ EXP_DIR = experiments
 BIN_DIR = bin
 
 # Compiler Flags
-# -I$(SRC_DIR): Tells compiler to look for headers (.h) in the src folder
-# -march=native: Optimizes for your specific CPU
-# -flto: Link Time Optimization
-# -DNDEBUG: Disables asserts (Critical for speed)
+
+# Xeon Gold 5416S (Sapphire Rapids) Optimization: (COMMENTED OUT FOR NOW!)
+# -march=sapphirerapids: Target Xeon 5416S instruction set (AVX-512, AMX).
+# -mprefer-vector-width=512: Force full 512-bit vector registers for bitboards.
+# -flto: Inline small functions across translation units.
+# -DNDEBUG: Disable asserts to remove runtime checking overhead.
+#CXXFLAGS = -O3 -march=sapphirerapids -mprefer-vector-width=512 -flto -DNDEBUG -std=c++17 -Wall -Wextra -I$(SRC_DIR)
+
+# Standard Build
 CXXFLAGS = -O3 -march=native -flto -DNDEBUG -std=c++17 -Wall -Wextra -I$(SRC_DIR)
 
 # The list of core logic files shared between the Agent and Experiments

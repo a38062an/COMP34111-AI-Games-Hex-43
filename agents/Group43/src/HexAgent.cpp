@@ -1,10 +1,54 @@
 #include "HexAgent.h"
-#include "sstream"
+#include <sstream>
+#include <iostream>
+#include <algorithm> // for max, min
+#include <string>
+#include <chrono>
 
 using namespace std;
 
-HexAgent::HexAgent(char colour) 
-    : myColour{colour}
+// TimeManager Implementation
+// TimeManager Implementation
+double TimeManager::engage(int movesSoFar, int movesRemainingEst) {
+    // DYNAMIC STRATEGY ONLY
+    double reservedBuffer = 1500.0; // 1.5 seconds safety buffer
+    double available = timeRemainingMs - reservedBuffer;
+    if (available < 0) available = 100.0; // Panic mode
+
+    // Estimate remaining moves. 
+    // Hex 11x11 often ends around 40-50 moves per player.
+    // Analysis of aggressive_returns.csv shows Avg TotalTurns ~26.
+    // We set estimate to 30 to be safe but more aggressive.
+    int expectedTotalMoves = 30;
+    int movesLeft = max(1, expectedTotalMoves - movesSoFar);
+
+    double timeForThisMove = 0.0;
+
+    // Phases
+    if (movesSoFar < 4) {
+        // Opening: Play relatively fast
+        timeForThisMove = 1000.0; 
+    } else {
+        // Mid/Late game: Distribute remaining time
+        // Use a "remaining moves" divider but weighted to be safer
+        // AGGRESSION FACTOR: Increased from 1.5 to 2.3 to utilize more time
+        double aggression = 2.3;
+        timeForThisMove = (available / movesLeft) * aggression;
+        
+        // Cap individual move time to avoid spending everything on one move if we have lots left
+        double cap = available * 0.5; // Raised cap to 50% 
+        if (timeForThisMove > cap) timeForThisMove = cap;
+    }
+
+    // Safety clamps
+    if (timeForThisMove < 100.0) timeForThisMove = 100.0;
+    if (timeForThisMove > available) timeForThisMove = available;
+
+    return timeForThisMove;
+}
+
+HexAgent::HexAgent(char colour, double timeLimitMs) 
+    : myColour{colour}, timeMgr(timeLimitMs), moveCount(0)
 {
     srand(time(0));
 }
@@ -38,7 +82,7 @@ void HexAgent::run()
 
         // Parse board
         parseBoard(boardString);
-        printBoard();
+        // printBoard(); // Disabled for clean experiment output? Or keep it? keeping for debug.
 
         if (command == "SWAP") 
         {
@@ -55,6 +99,8 @@ void HexAgent::run()
         // point.x is col, point.y is row.
         // So we must output row,col -> point.y,point.x
         cout << point.y << "," << point.x << endl;
+
+        moveCount++;
     }
 }
 
@@ -87,13 +133,34 @@ void HexAgent::parseBoard(const string& boardString)
 
 Point HexAgent::makeMove() 
 {
-    // Use MCTS to decide move
-    // Time limit: 4 second (4000ms) for now
-    // TODO: Dynamic time management based on remaining time
+    // Caclulate time allocation
+    double timeToSpend = timeMgr.engage(moveCount, -1);
     
+    // Log choice
+    cerr << "Move " << moveCount << ": Allocating " << timeToSpend << "ms (" 
+         << timeMgr.timeRemainingMs << "ms left)" << endl;
+
+    // Use MCTS to decide move
     MCTS mcts(bitboard, myColour);
-    MCTS::SearchResult result = mcts.runSearch(4000);
+    
+    // Start Timer
+    auto start = std::chrono::high_resolution_clock::now();
+    
+    // We pass timeToSpend. MCTS needs to respect this strictly.
+    MCTS::SearchResult result = mcts.runSearch((int)timeToSpend);
+    
+    // Stop Timer
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double, std::milli> elapsed = end - start;
+    double actualTimeSpent = elapsed.count();
+
     pair<int, int> bestMove = result.move;
+
+    // Deduct actual time spent (can't just use timeToSpend as MCTS might take longer than allocated)
+    timeMgr.timeRemainingMs -= actualTimeSpent;
+
+    // Log the difference
+    cerr << "Actual time spent: " << actualTimeSpent << "ms (Diff: " << (actualTimeSpent - timeToSpend) << "ms)" << endl; 
 
     if (bestMove.first != -1) 
     {

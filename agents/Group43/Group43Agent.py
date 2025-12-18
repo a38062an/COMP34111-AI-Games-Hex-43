@@ -17,8 +17,10 @@ class Group43Agent(AgentBase):
     """
 
     # --- Constants for easy configuration ---
-    EXECUTABLE_PATH = "agents/Group43/bin/CppAgent"
-    MAKEFILE_DIR = "agents/Group43"
+    # Resolve paths relative to this file to work from any CWD
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    EXECUTABLE_PATH = os.path.join(BASE_DIR, "bin", "CppAgent")
+    MAKEFILE_DIR = BASE_DIR
     BOARD_SIZE = "11"
 
     def __init__(self, colour: Colour):
@@ -44,13 +46,23 @@ class Group43Agent(AgentBase):
                 sys.exit(1)
 
         # 2. Launch the C++ Process
+        cmd_args = [
+            self.EXECUTABLE_PATH,
+            colour.get_char(),
+            self.BOARD_SIZE,
+        ]
+
+        # Check for environment configuration
+        # G43_TIME_LIMIT: int (ms)
+        # Purely for bench marking DEBUG
+        time_limit = os.environ.get("G43_TIME_LIMIT")
+
+        if time_limit:
+            cmd_args.append(time_limit)
+
         try:
             self.agent_process = Popen(
-                [
-                    self.EXECUTABLE_PATH,
-                    colour.get_char(),
-                    self.BOARD_SIZE,
-                ],
+                cmd_args,
                 stdout=PIPE,
                 stdin=PIPE,
                 text=True,
