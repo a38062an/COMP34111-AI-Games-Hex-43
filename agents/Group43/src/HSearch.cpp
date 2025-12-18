@@ -2,8 +2,10 @@
 
 using namespace std;
 
-experimental::optional<pair<int,int>> HSearch::findForcedWin(const Bitboard &board, char player)
-{
+experimental::optional<pair<int,int>> HSearch::findForcedWin(
+    const Bitboard &board,
+    char player
+) {
     // Try every legal move for virtual connections
     for (int i = 0; i < NUM_TILES; ++i)
     {
@@ -18,6 +20,34 @@ experimental::optional<pair<int,int>> HSearch::findForcedWin(const Bitboard &boa
         if (hasDirectConnection(next, player)) return make_pair(col, row);
     }
     return experimental::nullopt;
+}
+
+bool HSearch::hasDirectConnection(Bitboard board, char player)
+{
+    if (player == 'R') return board.checkWinRed();
+    else return board.checkWinBlue();
+}
+
+bool HSearch::hasSimpleBridge(const Bitboard& board, char player)
+{
+    for (int ay = 0; ay < BOARD_SIZE; ++ay)
+    {
+        for (int ax = 0; ax < BOARD_SIZE; ++ax)
+        {
+            if (board.get(ax, ay) != player)
+                continue;
+
+            for (int by = 0; by < BOARD_SIZE; ++by) {
+                for (int bx = 0; bx < BOARD_SIZE; ++bx)
+                {
+                    if (bx == ax && by == ay) continue;
+                    if (board.get(bx, by) != player) continue;
+                    if (simpleBridgeBetween(board, ax, ay, bx, by)) return true;
+                }
+            }
+        }
+    }
+    return false;
 }
 
 bool HSearch::hasVirtualConnection(const Bitboard& board, char player) {
@@ -47,15 +77,23 @@ bool HSearch::hasVirtualConnection(const Bitboard& board, char player) {
     return false;
 }
 
+// TODO: Implement opponentHasForcedWin
 bool HSearch::opponentHasForcedWin(const Bitboard &board, char player)
 {
     return false;
 }
 
-bool HSearch::hasDirectConnection(Bitboard board, char player)
-{
-    if (player == 'R') return board.checkWinRed();
-    else return board.checkWinBlue();
+bool HSearch::simpleBridgeBetween(
+    const Bitboard& board,
+    int ax, int ay,
+    int bx, int by
+) {
+    // must not already be adjacent
+    if (areAdjacent(ax, ay, bx, by))
+        return false;
+
+    // must share at least 2 empty neighbours
+    return countCommonEmptyNeighbors(board, ax, ay, bx, by) >= 2;
 }
 
 bool HSearch::areAdjacent(int x1, int y1, int x2, int y2)
@@ -71,28 +109,6 @@ bool HSearch::areAdjacent(int x1, int y1, int x2, int y2)
         if (x1 + n[0] == x2 && y1 + n[1] == y2) return true;
     }
     return false;
-}
-
-vector<pair<int,int>> HSearch::getNeighbors(int x, int y)
-{
-    static const int neigh[6][2] = {
-        {0, -1}, {1, -1},
-        {-1, 0}, {1, 0},
-        {-1, 1}, {0, 1}
-    };
-
-    std::vector<std::pair<int,int>> result;
-
-    for (auto& n : neigh)
-    {
-        int nx = x + n[0];
-        int ny = y + n[1];
-
-        if (nx >= 0 && nx < BOARD_SIZE &&
-            ny >= 0 && ny < BOARD_SIZE)
-            result.emplace_back(nx, ny);
-    }
-    return result;
 }
 
 int HSearch::countCommonEmptyNeighbors(
@@ -113,37 +129,26 @@ int HSearch::countCommonEmptyNeighbors(
     return count;
 }
 
-bool HSearch::simpleBridgeBetween(
-    const Bitboard& board,
-    int ax, int ay,
-    int bx, int by
-) {
-    // must not already be adjacent
-    if (areAdjacent(ax, ay, bx, by))
-        return false;
+vector<pair<int,int>> HSearch::getNeighbors(int x, int y)
+{
+    static const int neigh[6][2] = {
+        {0, -1}, {1, -1},
+        {-1, 0}, {1, 0},
+        {-1, 1}, {0, 1}
+    };
 
-    // must share at least 2 empty neighbours
-    return countCommonEmptyNeighbors(board, ax, ay, bx, by) >= 2;
-}
+    vector<pair<int,int>> result;
 
-bool HSearch::hasSimpleBridge(const Bitboard& board, char player) {
-    for (int ay = 0; ay < BOARD_SIZE; ++ay) {
-        for (int ax = 0; ax < BOARD_SIZE; ++ax)
-        {
-            if (board.get(ax, ay) != player)
-                continue;
+    for (auto& n : neigh)
+    {
+        int nx = x + n[0];
+        int ny = y + n[1];
 
-            for (int by = 0; by < BOARD_SIZE; ++by) {
-                for (int bx = 0; bx < BOARD_SIZE; ++bx)
-                {
-                    if (bx == ax && by == ay) continue;
-                    if (board.get(bx, by) != player) continue;
-                    if (simpleBridgeBetween(board, ax, ay, bx, by)) return true;
-                }
-            }
-        }
+        if (nx >= 0 && nx < BOARD_SIZE &&
+            ny >= 0 && ny < BOARD_SIZE)
+            result.emplace_back(nx, ny);
     }
-    return false;
+    return result;
 }
 
 bool HSearch::vcRecursive(
@@ -200,8 +205,8 @@ bool HSearch::vcRecursive(
 uint64_t HSearch::pack(int ax,int ay,int bx,int by) {
     // order-independent
     if (ax > bx || (ax == bx && ay > by)) {
-        std::swap(ax,bx);
-        std::swap(ay,by);
+        swap(ax,bx);
+        swap(ay,by);
     }
     return  ((uint64_t)ax << 48)
           | ((uint64_t)ay << 32)
