@@ -16,8 +16,8 @@ using namespace std;
 /**
  * @brief Main entry point.
  *
- * Usage: ./CppAgent <color> <board_size>
- * Example: ./CppAgent R 11
+ * Usage: ./CppAgent <color>
+ * Example: ./CppAgent R
  *
  * @param argc Number of arguments.
  * @param argv Argument values.
@@ -25,9 +25,9 @@ using namespace std;
  */
 int main(int argc, char *argv[])
 {
-    if (argc < 3)
+    if (argc < 2)
     {
-        cerr << "Usage: " << argv[0] << " <color> <board_size>" << endl;
+        cerr << "Usage: " << argv[0] << " <color>" << endl;
         return 1;
     }
 
@@ -35,7 +35,6 @@ int main(int argc, char *argv[])
 
     Bitboard::initTables();
 
-    // Discard board size. Assume 11x11
     HexAgent agent(colour);
     agent.run();
 

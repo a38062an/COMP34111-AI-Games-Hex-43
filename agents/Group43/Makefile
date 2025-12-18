@@ -6,36 +6,43 @@ EXP_DIR = experiments
 BIN_DIR = bin
 
 # Compiler Flags
-# -I$(SRC_DIR): Tells compiler to look for headers (.h) in the src folder
-# -march=native: Optimizes for your specific CPU
-# -flto: Link Time Optimization
-# -DNDEBUG: Disables asserts (Critical for speed)
+# -DNDEBUG is critical for speed (disables asserts)
 CXXFLAGS = -O3 -march=native -flto -DNDEBUG -std=c++17 -Wall -Wextra -I$(SRC_DIR)
 
-# The list of core logic files shared between the Agent and Experiments
-# (Note: Headers depend on these, but we compile the .cpp files)
+# Core logic shared files
 AGENT_SRCS = $(SRC_DIR)/MCTS.cpp $(SRC_DIR)/HexAgent.cpp
 
 # --- Main Targets ---
 
 all: $(BIN_DIR)/CppAgent
 
-# 1. The Competition Agent
-# Combines CppAgent.cpp (Entry point) + Core Logic
+# 1. BASELINE AGENT (Standard Compilation)
+# Run 'make' on the main branch to generate this.
 $(BIN_DIR)/CppAgent: $(SRC_DIR)/CppAgent.cpp $(AGENT_SRCS)
+	@mkdir -p $(BIN_DIR)
+	$(CXX) $(CXXFLAGS) -o $@ $^
+
+# 2. EXPERIMENTAL AGENT (Feature Branch Compilation)
+# Run 'make dev' on your feature branch to generate this.
+# It compiles the exact same source code (CppAgent.cpp) but saves it as 'DevAgent'.
+$(BIN_DIR)/DevAgent: $(SRC_DIR)/CppAgent.cpp $(AGENT_SRCS)
 	@mkdir -p $(BIN_DIR)
 	$(CXX) $(CXXFLAGS) -o $@ $^
 
 # --- Benchmarking Targets ---
 
-# Standard Experiment
-$(BIN_DIR)/Experiment: $(EXP_DIR)/Experiment.cpp $(AGENT_SRCS)
+# Speed Test (Simulations Per Second)
+$(BIN_DIR)/SPS: $(EXP_DIR)/SPS.cpp $(AGENT_SRCS)
 	@mkdir -p $(BIN_DIR)
 	$(CXX) $(CXXFLAGS) -o $@ $^
 
 # --- Utilities ---
 
+# Helper alias for building the feature agent
+dev: $(BIN_DIR)/DevAgent
+	@echo "Compiled feature branch to $(BIN_DIR)/DevAgent"
+
 clean:
 	rm -rf $(BIN_DIR)
 
-.PHONY: all clean
+.PHONY: all clean dev
