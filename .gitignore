@@ -187,3 +187,12 @@ game.log
 
 # Game Logs
 game.log
+# VS Code
+.vscode/
+
+# LibTorch
+agents/Group43/src/libtorch/
+libtorch/
+
+# macOS
+.DS_Store

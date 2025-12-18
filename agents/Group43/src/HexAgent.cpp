@@ -7,6 +7,18 @@ HexAgent::HexAgent(char colour)
     : myColour{colour}
 {
     srand(time(0));
+    try {
+        // Load the TorchScript model
+        module = torch::jit::load("checkpoints/hex_model.pt");
+        std::cerr << "Successfully loaded neural network model." << std::endl;
+        
+        // Optimisation for inference
+        module.eval();
+    }
+    catch (const c10::Error& e) {
+        std::cerr << "Error loading model: " << e.msg() << std::endl;
+        exit(1);
+    }
 }
 
 void HexAgent::run() 

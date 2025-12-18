@@ -9,6 +9,7 @@
 #include <chrono>
 #include <deque>
 #include "Bitboard.h"
+#include <torch/script.h>
 
 #include "Node.h"
 
@@ -28,16 +29,23 @@ public:
     double explorationConstant;
     double raveConstant;
 
+    torch::jit::script::Module* module; /// Pointer to loaded neural network
+    
     /**
      * @brief Construct a new MCTS engine.
      *
      * @param board The current board state.
      * @param colour The agent's colour.
+     * @param net Pointer to the neural network module (can be nullptr).
      * @param exploration UCT exploration constant (default 1.414).
      * @param rave RAVE constant (default 1000.0).
      */
-    MCTS(const Bitboard &board, char colour, double exploration = 1.414, double rave = 1000.0)
-        : rootBoard{board}, myColour{colour}, explorationConstant{exploration}, raveConstant{rave}
+    MCTS(const Bitboard &board, char colour, torch::jit::script::Module* net = nullptr, double exploration = 1.414, double rave = 1000.0)
+        : rootBoard{board}, 
+        myColour{colour}, 
+        explorationConstant{exploration}, 
+        raveConstant{rave},
+        module{net}
     {
     }
 
