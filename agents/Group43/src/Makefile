@@ -23,3 +23,6 @@ ExperimentNoTT: Experiment.cpp MCTS.cpp
 
 TestHSearch: tests/TestHSearch.cpp HSearch.cpp
 	$(CXX) $(CXXFLAGS) -o TestHSearch tests/TestHSearch.cpp HSearch.cpp
+
+TestBridges: tests/TestBridges.cpp
+	$(CXX) $(CXXFLAGS) -o TestBridges tests/TestBridges.cpp
