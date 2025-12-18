@@ -30,16 +30,13 @@ struct Node
     uint64_t hash;                   
     bitset<NUM_TILES> expandedMoves; 
 
-    // Neural Network Policy Priors
-    float prior;                    ///< The probability of this move (from parent's policy)
-    float childPriors[NUM_TILES];   ///< The policy vector for potential children 
-    bool evaluated; //< Has the neural network evaluated this node?
+
 
     /**
      * @brief Construct a new Node using direct index.
      */
     Node(uint8_t index, char moveColour, Node *parentNode, const Bitboard &board, uint64_t nodeHash = 0)
-        : moveIndex{index}, colour{moveColour}, visits{0}, raveVisits{0}, wins{0.0}, raveWins{0.0}, parent{parentNode}, hash{nodeHash}, prior{0.0f}, evaluated{false}
+        : moveIndex{index}, colour{moveColour}, visits{0}, raveVisits{0}, wins{0.0}, raveWins{0.0}, parent{parentNode}, hash{nodeHash}
     {
         // Logic: Total Tiles - (Red Tiles + Blue Tiles)
         // bitset.count() is hardware optimized (popcnt)
@@ -77,11 +74,11 @@ struct Node
             if (child->visits == 0)
                 return child;
 
-            // PUCT Part (AlphaZero Style)
-            // Q(s,a) + c_puct * P(s,a) * sqrt(ParentVisits) / (1 + childVisits)
+            // UCT Part (Standard MCTS)
+            // Q(s,a) + c * sqrt(ln(N) / n)
             double qValue = child->wins / child->visits;
-            double uValue = explorationConstant * child->prior * sqrt(this->visits) / (1.0 + child->visits);
-            double puctValue = qValue + uValue;
+            double uValue = explorationConstant * sqrt(log(this->visits) / (double)child->visits);
+            double uctValue = qValue + uValue;
 
             // RAVE Part (AMAF)
             double raveValue = 0.0;
@@ -93,8 +90,8 @@ struct Node
             // Beta Calculation (RAVE weight decreases as visits increase)
             double beta = sqrt(raveConstant / (3 * visits + raveConstant));
 
-            // Hybrid Score: (1 - beta) * PUCT + beta * RAVE
-            double score = (1.0 - beta) * puctValue + beta * raveValue;
+            // Hybrid Score: (1 - beta) * UCT + beta * RAVE
+            double score = (1.0 - beta) * uctValue + beta * raveValue;
 
             if (score > bestValue)
             {

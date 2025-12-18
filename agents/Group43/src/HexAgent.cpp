@@ -11,48 +11,7 @@ HexAgent::HexAgent(char colour)
 {
     srand(time(0));
 
-    // List of places to look for the model
-    vector<string> candidatePaths = {
-        "src/checkpoints/hex_model.pt",                 // If running from agents/Group43/
-        "agents/Group43/src/checkpoints/hex_model.pt",  // If running from Project Root
-        "../src/checkpoints/hex_model.pt",              // If running from bin/
-        "checkpoints/hex_model.pt"                      // If running directly inside src/
-    };
 
-    string modelPath = "";
-    bool found = false;
-
-    // Check which path actually exists
-    for (const auto& path : candidatePaths) {
-        if (fs::exists(path)) {
-            modelPath = path;
-            found = true;
-            cerr << "Found model at: " << modelPath << endl;
-            break;
-        }
-    }
-
-    if (!found) {
-        cerr << "CRITICAL ERROR: Could not find 'hex_model.pt'!" << endl;
-        cerr << "Checked the following locations:" << endl;
-        for (const auto& path : candidatePaths) {
-            cerr << "  - " << fs::absolute(path) << endl;
-        }
-        exit(1);
-    }
-
-    try {
-        // Load the TorchScript model from the valid path
-        module = torch::jit::load(modelPath);
-        std::cerr << "Successfully loaded neural network model." << std::endl;
-        
-        // Optimisation for inference
-        module.eval();
-    }
-    catch (const c10::Error& e) {
-        std::cerr << "Error loading model: " << e.msg() << std::endl;
-        exit(1);
-    }
 }
 
 void HexAgent::run() 
@@ -137,7 +96,7 @@ Point HexAgent::makeMove()
     // Time limit: 4 second (4000ms) for now
     // TODO: Dynamic time management based on remaining time
     
-    MCTS mcts(bitboard, myColour, &module);
+    MCTS mcts(bitboard, myColour);
     MCTS::SearchResult result = mcts.runSearch(4000);
     pair<int, int> bestMove = result.move;
 
