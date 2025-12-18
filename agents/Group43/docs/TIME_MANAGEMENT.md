@@ -4,11 +4,11 @@
 The agent uses a 4-layer safety system to manage its 5-minute (300s) time budget:
 
 1.  **Dynamic Curve**: Allocates time based on game phase.
-    *   **Opening (Moves 0-4)**: Fast play (~1s) to save time.
-    *   **Middle Game**: Heaviest thought, allocating `RemainingTime / RemainingMoves`.
+    *   **Opening (Moves 0-3)**: Fast play (1s) to save time.
+    *   **Middle Game**: Heaviest thought, allocating `RemainingTime / RemainingMoves` * Aggression Factor (2.3).
     *   **End Game**: fast cleanup.
-2.  **Move Cap**: Limits any single move to maximum 40% of remaining time to prevent starvation.
-3.  **Safety Buffer**: Reserves a 10s "hard buffer" that is never allocated.
+2.  **Move Cap**: Limits any single move to maximum 50% of remaining time to prevent starvation.
+3.  **Safety Buffer**: Reserves a 1.5s "hard buffer" that is never allocated.
 4.  **Panic Mode**: If time drops below 1s, the agent switches to instant play (100ms) to avoid timeout.
 
 ## Configuration

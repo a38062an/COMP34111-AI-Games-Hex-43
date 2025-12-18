@@ -1,8 +1,8 @@
 #include "MCTS.h"
 #include <cstdlib>
+#include <random>
 
 using namespace std;
-#include <random>
 
 // Static member definitions
 MCTS::TranspositionTable MCTS::tt;
@@ -160,11 +160,8 @@ Node *MCTS::select(Node *node, Bitboard &board)
 
 Node *MCTS::expand(Node *node, Bitboard &board)
 {
-    // Safety check (should be caught by isFullyExpanded, but good to have)
     if (node->remainingMoves == 0)
         return nullptr;
-
-
 
     // Bitwise Move Generation
     // 1. Calculate all occupied tiles (Red OR Blue)

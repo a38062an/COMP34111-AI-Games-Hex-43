@@ -4,7 +4,7 @@ CXX = g++
 
 # Directories
 SRC_DIR = src
-EXP_DIR = experiments
+EXP_DIR = benchmarks
 BIN_DIR = bin
 
 # Compiler Flags

@@ -23,7 +23,7 @@ struct TimeManager {
         : totalTimeMs(totalTime), timeRemainingMs(totalTime), movesPlayed(0) {}
     
     // Returns time to spend on this move
-    double engage(int movesSoFar, int movesRemainingEst);
+    double engage(int movesSoFar);
 };
 
 class HexAgent

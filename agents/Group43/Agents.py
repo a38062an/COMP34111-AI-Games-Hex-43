@@ -16,12 +16,19 @@ class Group43AgentBase(AgentBase):
     """
 
     # Defaults
-    MAKEFILE_DIR = "agents/Group43"
+    # Defaults
+    # Use absolute path relative to this file to allow running from anywhere
+    MAKEFILE_DIR = os.path.dirname(os.path.abspath(__file__))
 
     def __init__(self, colour: Colour, binary_name: str, extra_args: list = None):
         super().__init__(colour)
-
-        self.executable_path = f"{self.MAKEFILE_DIR}/{binary_name}"
+        
+        # binary_name passed as "bin/CppAgent", but MAKEFILE_DIR is .../Group43
+        # So we want .../Group43/bin/CppAgent.
+        # However, binary_name might already include 'bin/' if passed from subclass.
+        # Let's clean it up.
+        
+        self.executable_path = os.path.join(self.MAKEFILE_DIR, binary_name)
         self.extra_args = extra_args if extra_args else []
 
         # Check if binary exists (We assume manual compilation per the requested workflow)
@@ -96,10 +103,11 @@ class BaselineAgent(Group43AgentBase):
     The Stable/Master version. 
     Uses 'bin/CppAgent' (Compiled via 'make' on main branch).
     """
-    def __init__(self, colour: Colour):
+    def __init__(self, colour: Colour, time_limit_ms: int = 300000):
         super().__init__(
             colour, 
-            binary_name="bin/CppAgent"
+            binary_name="bin/CppAgent",
+            extra_args=["11", str(time_limit_ms)]
         )
 
 class ExperimentalAgent(Group43AgentBase):
@@ -107,8 +115,9 @@ class ExperimentalAgent(Group43AgentBase):
     The Feature/Dev version.
     Uses 'bin/DevAgent' (Compiled via 'make dev' on feature branch).
     """
-    def __init__(self, colour: Colour):
+    def __init__(self, colour: Colour, time_limit_ms: int = 300000):
         super().__init__(
             colour,
-            binary_name="bin/DevAgent"
+            binary_name="bin/DevAgent",
+            extra_args=["11", str(time_limit_ms)]
         )

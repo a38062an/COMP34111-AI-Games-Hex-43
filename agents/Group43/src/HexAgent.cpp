@@ -6,11 +6,9 @@
 #include <chrono>
 
 using namespace std;
-namespace fs = std::filesystem;
 
 // TimeManager Implementation
-// TimeManager Implementation
-double TimeManager::engage(int movesSoFar, int movesRemainingEst) {
+double TimeManager::engage(int movesSoFar) {
     // DYNAMIC STRATEGY ONLY
     double reservedBuffer = 1500.0; // 1.5 seconds safety buffer
     double available = timeRemainingMs - reservedBuffer;
@@ -137,7 +135,7 @@ void HexAgent::parseBoard(const string& boardString)
 Point HexAgent::makeMove() 
 {
     // Caclulate time allocation
-    double timeToSpend = timeMgr.engage(moveCount, -1);
+    double timeToSpend = timeMgr.engage(moveCount);
     
     // Log choice
     cerr << "Move " << moveCount << ": Allocating " << timeToSpend << "ms (" 
