@@ -8,8 +8,16 @@ EXP_DIR = experiments
 BIN_DIR = bin
 
 # Compiler Flags
-# Added TORCH_INCLUDES
-CXXFLAGS = -O3 -march=native -flto -DNDEBUG -std=c++17 -Wall -Wextra -Wno-unused-parameter -I$(SRC_DIR)
+
+# Xeon Gold 5416S (Sapphire Rapids) Optimization: (COMMENTED OUT FOR NOW!)
+# -march=sapphirerapids: Target Xeon 5416S instruction set (AVX-512, AMX).
+# -mprefer-vector-width=512: Force full 512-bit vector registers for bitboards.
+# -flto: Inline small functions across translation units.
+# -DNDEBUG: Disable asserts to remove runtime checking overhead.
+#CXXFLAGS = -O3 -march=sapphirerapids -mprefer-vector-width=512 -flto -DNDEBUG -std=c++17 -Wall -Wextra -I$(SRC_DIR)
+
+# Standard Build
+CXXFLAGS = -O3 -march=native -flto -DNDEBUG -std=c++17 -Wall -Wextra -I$(SRC_DIR)
 
 # The list of core logic files shared between the Agent and Experiments
 AGENT_SRCS = $(SRC_DIR)/MCTS.cpp $(SRC_DIR)/HexAgent.cpp

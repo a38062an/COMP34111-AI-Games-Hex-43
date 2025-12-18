@@ -13,15 +13,19 @@ struct Point
     int y; // Represents row
 };
 
-/**
- * @brief Main agent class that handles game protocol and logic.
- *
- * This class is responsible for:
- * 1. Parsing input commands from the game engine.
- * 2. Maintaining the board state.
- * 3. Invoking the MCTS engine to decide moves.
- * 4. Sending moves back to the engine.
- */
+struct TimeManager {
+    double totalTimeMs;
+    // strategy removed
+    double timeRemainingMs;
+    int movesPlayed;
+
+    TimeManager(double totalTime) 
+        : totalTimeMs(totalTime), timeRemainingMs(totalTime), movesPlayed(0) {}
+    
+    // Returns time to spend on this move
+    double engage(int movesSoFar, int movesRemainingEst);
+};
+
 class HexAgent
 {
 public:
@@ -29,8 +33,9 @@ public:
      * @brief Construct a new Hex Agent.
      *
      * @param colour The agent's colour ('R' or 'B').
+     * @param timeLimitMs Total time budget in milliseconds.
      */
-    HexAgent(char colour);
+    HexAgent(char colour, double timeLimitMs = 300000.0);
 
     /**
      * @brief Main loop of the agent.
@@ -44,6 +49,8 @@ private:
     char myColour;        ///< The agent's assigned colour
     vector<string> board; ///< String representation of the board (for debugging/printing)
     Bitboard bitboard;    ///< Efficient bitset representation for MCTS
+    TimeManager timeMgr;  ///< Manages time allocation
+    int moveCount;        ///< Track number of moves played
 
 
     /**
