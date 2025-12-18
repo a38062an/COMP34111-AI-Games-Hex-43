@@ -35,7 +35,7 @@ $(BIN_DIR)/CppAgent: $(SRC_DIR)/CppAgent.cpp $(AGENT_SRCS)
 # Standard Experiment
 $(BIN_DIR)/Experiment: $(EXP_DIR)/Experiment.cpp $(AGENT_SRCS)
 	@mkdir -p $(BIN_DIR)
-	$(CXX) $(CXXFLAGS) -o $@ $^
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(TORCH_LIBS) $(mac_RPATH)
 
 # --- Utilities ---
 

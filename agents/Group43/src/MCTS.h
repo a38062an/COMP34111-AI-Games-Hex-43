@@ -213,9 +213,7 @@ private:
     };
 
     FastRNG rng;
-};
 
-private:
     /**
      * @brief Evaluates the board using the Neural Network.
      * 
@@ -224,3 +222,4 @@ private:
      * @return std::vector<float> A 121-element probability vector (Policy).
      */
     std::vector<float> evaluate(const Bitboard& board, char currentTurn);
+};

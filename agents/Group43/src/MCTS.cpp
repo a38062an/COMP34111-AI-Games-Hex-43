@@ -164,6 +164,21 @@ Node *MCTS::expand(Node *node, Bitboard &board)
     if (node->remainingMoves == 0)
         return nullptr;
 
+    // 0. Evaluation (Policy Integration)
+    // If this node hasn't been evaluated by the network yet, do it now.
+    if (!node->evaluated)
+    {
+        // Whose turn is it at this node? The opponent of the person who just moved.
+        char nextTurn = getOpponent(node->colour);
+        std::vector<float> policy = evaluate(board, nextTurn);
+        
+        // Store priors
+        for(int i=0; i<NUM_TILES; ++i) {
+            node->childPriors[i] = policy[i];
+        }
+        node->evaluated = true;
+    }
+
     // Bitwise Move Generation
     // 1. Calculate all occupied tiles (Red OR Blue)
     bitset<NUM_TILES> occupied = board.red | board.blue;
@@ -213,6 +228,9 @@ Node *MCTS::expand(Node *node, Bitboard &board)
     uint64_t newHash = hasher.updateHash(node->hash, moveIndex, childColour);
 
     Node *child = new Node(moveIndex, childColour, node, board, newHash);
+    
+    // Assign Prior from parent's memory
+    child->prior = node->childPriors[moveIndex];
 
     double wins;
     int visits;

@@ -33,12 +33,13 @@ struct Node
     // Neural Network Policy Priors
     float prior;                    ///< The probability of this move (from parent's policy)
     float childPriors[NUM_TILES];   ///< The policy vector for potential children 
+    bool evaluated; //< Has the neural network evaluated this node?
 
     /**
      * @brief Construct a new Node using direct index.
      */
     Node(uint8_t index, char moveColour, Node *parentNode, const Bitboard &board, uint64_t nodeHash = 0)
-        : moveIndex{index}, colour{moveColour}, visits{0}, raveVisits{0}, wins{0.0}, raveWins{0.0}, parent{parentNode}, hash{nodeHash}, prior{0.0f}
+        : moveIndex{index}, colour{moveColour}, visits{0}, raveVisits{0}, wins{0.0}, raveWins{0.0}, parent{parentNode}, hash{nodeHash}, prior{0.0f}, evaluated{false}
     {
         // Logic: Total Tiles - (Red Tiles + Blue Tiles)
         // bitset.count() is hardware optimized (popcnt)
@@ -68,7 +69,7 @@ struct Node
         double bestValue = -numeric_limits<double>::infinity();
 
         // Add epsilon to avoid log(0)
-        double logParentVisits = log(this->visits + 1e-6);
+        // double logParentVisits = log(this->visits + 1e-6); // Not used in PUCT
 
         for (Node *child : children)
         {
@@ -76,10 +77,13 @@ struct Node
             if (child->visits == 0)
                 return child;
 
-            // UCT Part
-            double uctValue = (child->wins / child->visits) + explorationConstant * sqrt(logParentVisits / child->visits);
+            // PUCT Part (AlphaZero Style)
+            // Q(s,a) + c_puct * P(s,a) * sqrt(ParentVisits) / (1 + childVisits)
+            double qValue = child->wins / child->visits;
+            double uValue = explorationConstant * child->prior * sqrt(this->visits) / (1.0 + child->visits);
+            double puctValue = qValue + uValue;
 
-            // RAVE Part
+            // RAVE Part (AMAF)
             double raveValue = 0.0;
             if (child->raveVisits > 0)
             {
@@ -89,7 +93,8 @@ struct Node
             // Beta Calculation (RAVE weight decreases as visits increase)
             double beta = sqrt(raveConstant / (3 * visits + raveConstant));
 
-            double score = (1.0 - beta) * uctValue + beta * raveValue;
+            // Hybrid Score: (1 - beta) * PUCT + beta * RAVE
+            double score = (1.0 - beta) * puctValue + beta * raveValue;
 
             if (score > bestValue)
             {
