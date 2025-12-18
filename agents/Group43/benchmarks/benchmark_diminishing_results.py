@@ -27,19 +27,18 @@ def run_game_internal(time_limit_ms_p1, time_limit_ms_p2):
     Runs a single game using the internal game engine.
     """
     
-    # Configure Agent 1 (Red)
-    os.environ["G43_TIME_LIMIT"] = str(time_limit_ms_p1)
+    # Run Agent 1 (Red) with Variable Time
+    # We use the current codebase (BaselineAgent = bin/CppAgent) for both
+    # to find the optimal time setting for THIS version.
     
-    # Reload module
-    import agents.Group43.Group43Agent as agent_module
-    importlib.reload(agent_module)
-    AgentClass = getattr(agent_module, "Group43Agent")
-    agent1 = AgentClass(Colour.RED)
+    import agents.Group43.Agents as Agents
+    importlib.reload(Agents) # Reload to pick up any changes
     
-    # Configure Agent 2 (Blue)
-    os.environ["G43_TIME_LIMIT"] = str(time_limit_ms_p2)
+    # Agent 1: Variable Time
+    agent1 = Agents.BaselineAgent(Colour.RED, time_limit_ms=time_limit_ms_p1)
     
-    agent2 = AgentClass(Colour.BLUE)
+    # Agent 2: Fixed Baseline Time
+    agent2 = Agents.BaselineAgent(Colour.BLUE, time_limit_ms=time_limit_ms_p2)
     
     # Initialize Game
     game = Game(

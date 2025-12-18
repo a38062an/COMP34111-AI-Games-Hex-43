@@ -20,19 +20,8 @@ int main()
     // 2. Setup Board and Agent
     Bitboard board; // Empty Board
     
-    // Load Model
-    torch::jit::script::Module module;
-    try {
-        module = torch::jit::load("src/checkpoints/hex_model.pt");
-        module.eval();
-        cout << "Model loaded successfully." << endl;
-    } catch (const c10::Error& e) {
-        cerr << "Error loading model: " << e.msg() << endl;
-        return -1;
-    }
-
-    // Parameters: 'R' (Red), Model, C=1.414, RAVE_K=1000
-    MCTS mcts(board, 'R', &module, 1.414, 1000.0);
+    // Parameters: 'R' (Red)
+    MCTS mcts(board, 'R');
 
     // 3. Warmup Phase
     // (Runs for 500ms to ensure caches are hot and memory pool is active)
