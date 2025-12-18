@@ -9,7 +9,7 @@ HexAgent::HexAgent(char colour)
     srand(time(0));
     try {
         // Load the TorchScript model
-        module = torch::jit::load("checkpoints/hex_model.pt");
+        module = torch::jit::load("src/checkpoints/hex_model.pt");
         std::cerr << "Successfully loaded neural network model." << std::endl;
         
         // Optimisation for inference
@@ -103,7 +103,7 @@ Point HexAgent::makeMove()
     // Time limit: 4 second (4000ms) for now
     // TODO: Dynamic time management based on remaining time
     
-    MCTS mcts(bitboard, myColour);
+    MCTS mcts(bitboard, myColour, &module);
     MCTS::SearchResult result = mcts.runSearch(4000);
     pair<int, int> bestMove = result.move;
 

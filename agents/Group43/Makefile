@@ -1,3 +1,12 @@
+# LibTorch Configuration
+# Path relative to this Makefile (agents/Group43/)
+TORCH_PATH = src/libtorch
+TORCH_INCLUDES = -I$(TORCH_PATH)/include -I$(TORCH_PATH)/include/torch/csrc/api/include
+TORCH_LIBS = -L$(TORCH_PATH)/lib -ltorch -ltorch_cpu -lc10 
+# macOS RPATH: Binary is in bin/, libtorch is in src/libtorch/lib
+# So from bin/ we go ../src/libtorch/lib
+mac_RPATH = -Wl,-rpath,@loader_path/../src/libtorch/lib
+
 CXX = g++
 
 # Directories
@@ -6,14 +15,10 @@ EXP_DIR = experiments
 BIN_DIR = bin
 
 # Compiler Flags
-# -I$(SRC_DIR): Tells compiler to look for headers (.h) in the src folder
-# -march=native: Optimizes for your specific CPU
-# -flto: Link Time Optimization
-# -DNDEBUG: Disables asserts (Critical for speed)
-CXXFLAGS = -O3 -march=native -flto -DNDEBUG -std=c++17 -Wall -Wextra -I$(SRC_DIR)
+# Added TORCH_INCLUDES
+CXXFLAGS = -O3 -march=native -DNDEBUG -std=c++17 -Wall -Wextra -Wno-unused-parameter -I$(SRC_DIR) $(TORCH_INCLUDES)
 
 # The list of core logic files shared between the Agent and Experiments
-# (Note: Headers depend on these, but we compile the .cpp files)
 AGENT_SRCS = $(SRC_DIR)/MCTS.cpp $(SRC_DIR)/HexAgent.cpp
 
 # --- Main Targets ---
@@ -21,10 +26,9 @@ AGENT_SRCS = $(SRC_DIR)/MCTS.cpp $(SRC_DIR)/HexAgent.cpp
 all: $(BIN_DIR)/CppAgent
 
 # 1. The Competition Agent
-# Combines CppAgent.cpp (Entry point) + Core Logic
 $(BIN_DIR)/CppAgent: $(SRC_DIR)/CppAgent.cpp $(AGENT_SRCS)
 	@mkdir -p $(BIN_DIR)
-	$(CXX) $(CXXFLAGS) -o $@ $^
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(TORCH_LIBS) $(mac_RPATH)
 
 # --- Benchmarking Targets ---
 
