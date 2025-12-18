@@ -164,6 +164,21 @@ Node *MCTS::expand(Node *node, Bitboard &board)
     if (node->remainingMoves == 0)
         return nullptr;
 
+    // 0. Evaluation (Policy Integration)
+    // If this node hasn't been evaluated by the network yet, do it now.
+    if (!node->evaluated)
+    {
+        // Whose turn is it at this node? The opponent of the person who just moved.
+        char nextTurn = getOpponent(node->colour);
+        std::vector<float> policy = evaluate(board, nextTurn);
+        
+        // Store priors
+        for(int i=0; i<NUM_TILES; ++i) {
+            node->childPriors[i] = policy[i];
+        }
+        node->evaluated = true;
+    }
+
     // Bitwise Move Generation
     // 1. Calculate all occupied tiles (Red OR Blue)
     bitset<NUM_TILES> occupied = board.red | board.blue;
@@ -213,6 +228,9 @@ Node *MCTS::expand(Node *node, Bitboard &board)
     uint64_t newHash = hasher.updateHash(node->hash, moveIndex, childColour);
 
     Node *child = new Node(moveIndex, childColour, node, board, newHash);
+    
+    // Assign Prior from parent's memory
+    child->prior = node->childPriors[moveIndex];
 
     double wins;
     int visits;
@@ -317,4 +335,72 @@ void MCTS::backpropagate(Node *node, const SimulationResult &result)
         // Move up to the parent
         node = node->parent;
     }
+}
+
+std::vector<float> MCTS::evaluate(const Bitboard& board, char currentTurn)
+{
+    // 1. Prepare Input Tensor (1, 6, 11, 11)
+    // We use torch::zeros to safely initialize everything to 0.0 (handling planes 3-5 automatically)
+    // options: CPU float32
+    auto options = torch::TensorOptions().dtype(torch::kFloat32);
+    torch::Tensor input = torch::zeros({1, 6, 11, 11}, options);
+
+    // Get accessor for fast element access: input[batch][channel][row][col]
+    auto input_a = input.accessor<float, 4>();
+
+    char myColor = currentTurn;
+    char oppColor = (currentTurn == 'R') ? 'B' : 'R';
+
+    // 2. Fill Feature Planes
+    // Plane 0: My Stones
+    // Plane 1: Opponent Stones
+    // Plane 2: Empty
+    // Planes 3,4,5: Left as 0.0 (as per dataset.py logic)
+    
+    for (int row = 0; row < 11; ++row) {
+        for (int col = 0; col < 11; ++col) {
+            char cell = board.get(col, row);
+            if (cell == myColor) {
+                input_a[0][0][row][col] = 1.0f;
+            } else if (cell == oppColor) {
+                input_a[0][1][row][col] = 1.0f;
+            } else { // Empty
+                input_a[0][2][row][col] = 1.0f;
+            }
+        }
+    }
+
+    // 3. Inference
+    // Disable autograd for performance
+    torch::NoGradGuard no_grad;
+    
+    // Forward pass
+    // Model expects a vector of inputs (usually just one tensor)
+    std::vector<torch::jit::IValue> inputs;
+    inputs.push_back(input);
+    
+    // Execute
+    // The model returns a Tuple (logits, value) or just logits depending on export.
+    // Our export script traces 'HexModel', which returns (policy, value).
+    auto output = module->forward(inputs);
+    
+    // Handle Tuple output
+    torch::Tensor policyLogits;
+    if (output.isTuple()) {
+        policyLogits = output.toTuple()->elements()[0].toTensor();
+    } else if (output.isTensor()) {
+        policyLogits = output.toTensor();
+    }
+
+    // 4. Post-processing
+    // Apply Softmax to get probabilities
+    torch::Tensor policyProbss = torch::softmax(policyLogits, 1); // dim 1
+    
+    // Extract to std::vector
+    // Flatten first: (1, 121) -> (121)
+    policyProbss = policyProbss.flatten();
+    
+    std::vector<float> policyVec(policyProbss.data_ptr<float>(), policyProbss.data_ptr<float>() + policyProbss.numel());
+    
+    return policyVec;
 }

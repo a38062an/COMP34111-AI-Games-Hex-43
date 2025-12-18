@@ -32,11 +32,11 @@ The agent communicates via standard I/O and is designed to run via the `Hex.py` 
     ```
 2.  **Run against a Random Bot:**
     ```bash
-    python3 Hex.py -p1 "agents.Group43.Group43Agent Group43Agent" -p2 "agents.DefaultAgents.NaiveAgent NaiveAgent" -b 11 -v
+    python3 Hex.py -p1 "agents.Group43.Agents BaselineAgent" -p2 "agents.DefaultAgents.NaiveAgent NaiveAgent" -b 11 -v
     ```
 3.  **Run Self-Play:**
     ```bash
-    python3 Hex.py -p1 "agents.Group43.Group43Agent Group43Agent" -p2 "agents.Group43.Group43Agent Group43Agent" -b 11 -v
+    python3 Hex.py -p1 "agents.Group43.Agents BaselineAgent" -p2 "agents.Group43.Agents ExperimentalAgent" -b 11 -v
     ```
 
 ## 2. System Architecture
