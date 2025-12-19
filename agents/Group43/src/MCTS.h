@@ -29,7 +29,7 @@ public:
     double explorationConstant;
     double raveConstant;
 
-
+    static void initTables();
     
     /**
      * @brief Construct a new MCTS engine.
@@ -126,6 +126,10 @@ public:
 
     static TranspositionTable tt;
     static ZobristHasher hasher;
+
+private:
+    static int getPatternIndexFast(const Bitboard &board, int moveIndex, char myChar);
+    static int neighborLUT[NUM_TILES][6];
 
 private:
     /**
