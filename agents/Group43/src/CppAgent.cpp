@@ -41,6 +41,7 @@ int main(int argc, char *argv[])
     }
 
     Bitboard::initTables();
+    MCTS::initTables();
 
     // Discard board size. Assume 11x11
     HexAgent agent(colour, timeLimitMs);

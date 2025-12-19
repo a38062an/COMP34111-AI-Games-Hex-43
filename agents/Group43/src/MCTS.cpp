@@ -1,4 +1,5 @@
 #include "MCTS.h"
+#include "PatternWeights.h"
 #include <cstdlib>
 #include <random>
 
@@ -10,6 +11,7 @@ MCTS::ZobristHasher MCTS::hasher;
 
 // Global node counter for benchmarking
 long long g_nodeCount = 0;
+int MCTS::neighborLUT[NUM_TILES][6];
 
 MCTS::ZobristHasher::ZobristHasher()
 {
@@ -227,57 +229,112 @@ Node *MCTS::expand(Node *node, Bitboard &board)
     return child;
 }
 
+void MCTS::initTables() {
+    // Neighbor offsets for 11x11 board (Clockwise: TL, TR, R, BR, BL, L)
+    const int offsets[6] = {-11, -10, 1, 11, 10, -1};
+
+    for (int i = 0; i < NUM_TILES; ++i) {
+        int r = i / 11;
+        int c = i % 11;
+        
+        for (int k = 0; k < 6; ++k) {
+            int nIdx = i + offsets[k];
+            int nR = nIdx / 11;
+            int nC = nIdx % 11;
+            
+            // Check bounds and row/col wrapping validity
+            // Valid if inside 0-120 AND dist(row) <= 1 AND dist(col) <= 1
+            if (nIdx >= 0 && nIdx < NUM_TILES && abs(nR - r) <= 1 && abs(nC - c) <= 1) {
+                // Specific Hex wrap check: 
+                // e.g. moving Right (k=2) shouldn't wrap to next row's start
+                // The simple row/col distance check above covers most cases, 
+                // but let's be explicit based on your original logic:
+                bool valid = true;
+                if (k == 2 && nC < c) valid = false; // Wrapped Right -> Left
+                if (k == 5 && nC > c) valid = false; // Wrapped Left -> Right
+                // (Other diagonals are handled by array bounds mostly, but row check is safer)
+                
+                neighborLUT[i][k] = valid ? nIdx : -1;
+            } else {
+                neighborLUT[i][k] = -1; // Wall
+            }
+        }
+    }
+}
+
+// Define the helper as part of MCTS class
+int MCTS::getPatternIndexFast(const Bitboard &board, int moveIndex, char myChar) {
+    int patternIdx = 0;
+    for (int k = 0; k < 6; ++k) {
+        // Now can access private neighborLUT
+        int nIdx = MCTS::neighborLUT[moveIndex][k];
+        int code = 0; 
+
+        if (nIdx == -1) {
+            code = 2; // Wall
+        } else {
+            char p = board.get(nIdx); 
+            if (p == '0') code = 0;
+            else if (p == myChar) code = 1;
+            else code = 2;
+        }
+        patternIdx |= (code << (k * 2));
+    }
+    return patternIdx;
+}
+
+// Updated Simulate function
 MCTS::SimulationResult MCTS::simulate(Bitboard board, char turnColour)
 {
     SimulationResult result;
-
-    // 1. Identify empty tiles (candidate moves)
     int moves[NUM_TILES];
     int movesCount = 0;
 
-    for (int i = 0; i < NUM_TILES; ++i)
-    {
-        if (!board.isOccupied(i))
-        {
+    for (int i = 0; i < NUM_TILES; ++i) {
+        if (!board.isOccupied(i)) {
             moves[movesCount++] = i;
         }
     }
 
-    // 2. Play random moves untill the board is full
-    // We do NOT check for a winner here. Speed is the only goal.
+    const int MAX_ATTEMPTS = 4; 
+    const uint32_t MAX_WEIGHT = 255; // Use unsigned here
+
     while (movesCount > 0)
     {
-        // Fast random pick
-        int index = rng.range(movesCount);
-        int moveIndex = moves[index];
+        int bestMoveIdx = -1;
+        int selectedMove = -1;
 
-        // Remove selected move (swap with end)
-        moves[index] = moves[--movesCount];
+        for (int k = 0; k < MAX_ATTEMPTS; ++k) {
+            int rIdx = rng.range(movesCount);
+            int candidate = moves[rIdx];
 
-        // Update local board
-        board.set(moveIndex, turnColour);
+            int pattern = getPatternIndexFast(board, candidate, turnColour);
+            
+            // FIX: Read into unsigned variable. 
+            // Since PATTERN_WEIGHTS is 'int', this casts implicitly.
+            uint32_t weight = PATTERN_WEIGHTS[pattern]; 
 
-        // Track moves for RAVE
-        if (turnColour == 'R')
-            result.redMoves.set(moveIndex, 'R');
-        else
-            result.blueMoves.set(moveIndex, 'B');
+            // Now comparison is uint32_t vs uint32_t (No warning)
+            if (rng.range(MAX_WEIGHT) < weight) {
+                bestMoveIdx = rIdx;
+                selectedMove = candidate;
+                break;
+            }
+            
+            bestMoveIdx = rIdx;
+            selectedMove = candidate;
+        }
 
-        // Flip turn
+        moves[bestMoveIdx] = moves[--movesCount];
+        board.set(selectedMove, turnColour);
+
+        if (turnColour == 'R') result.redMoves.set(selectedMove, 'R');
+        else result.blueMoves.set(selectedMove, 'B');
+
         turnColour = getOpponent(turnColour);
     }
 
-    // 3. Check winner ONCE at the end
-    // Since Hex has no draws, if Red hasn't won, Blue MUST have won.
-    if (board.checkWinRed())
-    {
-        result.winner = 'R';
-    }
-    else
-    {
-        result.winner = 'B';
-    }
-
+    result.winner = board.checkWinRed() ? 'R' : 'B';
     return result;
 }
 
