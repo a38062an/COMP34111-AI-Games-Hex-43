@@ -12,3 +12,10 @@ ls
 python3 Hex.py -p1 "agents.Group43.ExternalAgent Group43Agent" -p2 "agents.DefaultAgents.NaiveAgent NaiveAgent" -b 11 -v
 make -C agents/Group43/src clean && make -C agents/Group43/src
 python3 Hex.py -p1 "agents.Group43.ExternalAgent Group43Agent" -p2 "agents.DefaultAgents.NaiveAgent NaiveAgent" -b 11 -v
+cd agents/Group43/
+make
+cd ..
+cd ..
+python3 HexTournament.py 
+ls -l agents/Group043/bin/CppAgent
+exit

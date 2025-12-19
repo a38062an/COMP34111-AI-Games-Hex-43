@@ -149,3 +149,15 @@ class NoSwapAgent(Group43AgentBase):
             binary_name="bin/OldAgent",
             extra_args=["11", str(time_limit_ms)]
         )
+
+class FinalAgent(Group43AgentBase):
+    """
+    The Final Submission version.
+    Uses 'bin/CppAgent' (Default binary name).
+    """
+    def __init__(self, colour: Colour):
+        super().__init__(
+            colour,
+            binary_name="bin/CppAgent",
+            extra_args=["11", "30000"] # BoardSize=11, TimeLimit=30s
+        )

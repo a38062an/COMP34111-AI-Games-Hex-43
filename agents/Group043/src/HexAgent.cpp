@@ -90,7 +90,7 @@ void HexAgent::run()
         if (command == "SWAP") 
         {
             myColour = (myColour == 'R') ? 'B' : 'R';
-            cerr << "Agent swapped colour to: " << myColour << endl;
+            //cerr << "Agent swapped colour to: " << myColour << endl;
         }
 
         // Decide move
@@ -111,12 +111,12 @@ void HexAgent::run()
 
 void HexAgent::printBoard() 
 {
-    cerr << "Agent Board State:" << endl;
-    for (const string& row : board) 
-    {
-        cerr << row << endl;
-    }
-    cerr << "-------------------" << endl;
+    //cerr << "Agent Board State:" << endl;
+    //for (const string& row : board) 
+    //{
+    //    cerr << row << endl;
+    //}
+    //cerr << "-------------------" << endl;
 }
 
 void HexAgent::parseBoard(const string& boardString) 
@@ -147,7 +147,7 @@ Point HexAgent::makeMove()
             static const Point openings[] = {{2, 1}, {0, 2}, {8, 1}};
             int openingIndex = rand() % 3;
             Point openingMove = openings[openingIndex];
-            cerr << "Opening Strategy: Playing fair move (" << openingMove.x << "," << openingMove.y << ")" << endl;
+            //cerr << "Opening Strategy: Playing fair move (" << openingMove.x << "," << openingMove.y << ")" << endl;
             return {openingMove.x, openingMove.y}; 
         }
         else // myColour == 'B'
@@ -182,13 +182,13 @@ Point HexAgent::makeMove()
 
                 if (inStrongBox || isObtuse) 
                 {
-                    cerr << "Swap Strategy: Opponent move (" << opponentColumn << "," << opponentRow << ") is Strong (Red Zone). SWAPPING." << endl;
+                    //cerr << "Swap Strategy: Opponent move (" << opponentColumn << "," << opponentRow << ") is Strong (Red Zone). SWAPPING." << endl;
                     cout << "SWAP" << endl;
                     return {-1, -1};
                 } 
                 else 
                 {
-                     cerr << "Swap Strategy: Opponent move (" << opponentColumn << "," << opponentRow << ") is Fair/Weak. KEEPING." << endl;
+                     //cerr << "Swap Strategy: Opponent move (" << opponentColumn << "," << opponentRow << ") is Fair/Weak. KEEPING." << endl;
                 }
             }
         }
@@ -198,8 +198,8 @@ Point HexAgent::makeMove()
     double timeToSpend = timeMgr.engage(moveCount);
     
     // Log choice
-    cerr << "Move " << moveCount << ": Allocating " << timeToSpend << "ms (" 
-         << timeMgr.timeRemainingMs << "ms left)" << endl;
+    //cerr << "Move " << moveCount << ": Allocating " << timeToSpend << "ms (" 
+    //     << timeMgr.timeRemainingMs << "ms left)" << endl;
 
     // Use MCTS to decide move
     MCTS mcts(bitboard, myColour);
@@ -221,7 +221,7 @@ Point HexAgent::makeMove()
     timeMgr.timeRemainingMs -= actualTimeSpent;
 
     // Log the difference
-    cerr << "Actual time spent: " << actualTimeSpent << "ms (Diff: " << (actualTimeSpent - timeToSpend) << "ms)" << endl; 
+    //cerr << "Actual time spent: " << actualTimeSpent << "ms (Diff: " << (actualTimeSpent - timeToSpend) << "ms)" << endl; 
 
     if (bestMove.first != -1) 
     {

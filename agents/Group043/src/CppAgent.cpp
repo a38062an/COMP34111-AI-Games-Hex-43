@@ -34,7 +34,7 @@ int main(int argc, char *argv[])
     char colour = argv[1][0];
     
     // Default: 300 seconds (5 minutes)
-    double timeLimitMs = 300000.0;
+    double timeLimitMs = 30000.0;
 
     if (argc >= 4) {
         timeLimitMs = stod(argv[3]);
