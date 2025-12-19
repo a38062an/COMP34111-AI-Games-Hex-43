@@ -26,7 +26,7 @@ public:
     );
 
     // For MCTS: Filter moves into strong and normal using H-Search
-    static void HSearch::filterMoves(
+    static void filterMoves(
         const Bitboard& board,
         char player,
         int depth,
@@ -39,7 +39,7 @@ private:
     static bool hasDirectConnection(Bitboard board, char player);
 
     // Returns true if placing at (x,y) creates a VC up to given depth
-    static bool HSearch::createsVCUpToDepth(
+    static bool createsVCUpToDepth(
         const Bitboard& board,
         char player,
         int x, int y,
@@ -47,7 +47,7 @@ private:
     );
 
     // Returns true if there is a VC bounded between a and b up to given depth
-    static bool HSearch::vcBoundedBetween(
+    static bool vcBoundedBetween(
         const Bitboard& board,
         char player,
         int ax, int ay,

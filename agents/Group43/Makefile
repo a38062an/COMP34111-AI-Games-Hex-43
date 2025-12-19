@@ -20,7 +20,11 @@ BIN_DIR = bin
 CXXFLAGS = -O3 -march=native -flto -DNDEBUG -std=c++17 -Wall -Wextra -I$(SRC_DIR)
 
 # The list of core logic files shared between the Agent and Experiments
-AGENT_SRCS = $(SRC_DIR)/MCTS.cpp $(SRC_DIR)/HexAgent.cpp
+AGENT_SRCS = \
+    $(SRC_DIR)/MCTS.cpp \
+    $(SRC_DIR)/HexAgent.cpp \
+    $(SRC_DIR)/Bitboard.cpp \
+    $(SRC_DIR)/HSearch.cpp
 
 # --- Main Targets ---
 
