@@ -77,6 +77,10 @@ class Group43AgentBase(AgentBase):
             response = self.agent_process.stdout.readline().rstrip()
             if not response:
                 raise ValueError("Received empty response.")
+            
+            if response == "SWAP":
+                return Move(-1, -1)
+                
             x, y = response.split(",")
             return Move(int(x), int(y))
         except Exception as e:
@@ -119,5 +123,29 @@ class ExperimentalAgent(Group43AgentBase):
         super().__init__(
             colour,
             binary_name="bin/DevAgent",
+            extra_args=["11", str(time_limit_ms)]
+        )
+
+class SwapAgent(Group43AgentBase):
+    """
+    The New version with Swap Strategy.
+    Uses 'bin/NewAgent'.
+    """
+    def __init__(self, colour: Colour, time_limit_ms: int = 300000):
+        super().__init__(
+            colour,
+            binary_name="bin/NewAgent",
+            extra_args=["11", str(time_limit_ms)]
+        )
+
+class NoSwapAgent(Group43AgentBase):
+    """
+    The Old version WITHOUT Swap Strategy.
+    Uses 'bin/OldAgent'.
+    """
+    def __init__(self, colour: Colour, time_limit_ms: int = 300000):
+        super().__init__(
+            colour,
+            binary_name="bin/OldAgent",
             extra_args=["11", str(time_limit_ms)]
         )

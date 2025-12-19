@@ -4,6 +4,8 @@
 #include <algorithm> // for max, min
 #include <string>
 #include <chrono>
+#include <vector>
+#include <cstdlib> // rand, srand
 
 using namespace std;
 
@@ -99,7 +101,9 @@ void HexAgent::run()
         // We store board[row][col].
         // point.x is col, point.y is row.
         // So we must output row,col -> point.y,point.x
-        cout << point.y << "," << point.x << endl;
+        if (point.x != -1) {
+            cout << point.y << "," << point.x << endl;
+        }
 
         moveCount++;
     }
@@ -134,6 +138,62 @@ void HexAgent::parseBoard(const string& boardString)
 
 Point HexAgent::makeMove() 
 {
+    // 1. OPENING / SWAP STRATEGY (First Move Only)
+    if (moveCount == 0)
+    {
+        if (myColour == 'R') 
+        {
+            // "The Bot's Best Choice: ... c2, a3, or i2" 
+            static const Point openings[] = {{2, 1}, {0, 2}, {8, 1}};
+            int openingIndex = rand() % 3;
+            Point openingMove = openings[openingIndex];
+            cerr << "Opening Strategy: Playing fair move (" << openingMove.x << "," << openingMove.y << ")" << endl;
+            return {openingMove.x, openingMove.y}; 
+        }
+        else // myColour == 'B'
+        {
+            // Find opponent's move
+            int opponentColumn = -1;
+            int opponentRow = -1;
+            
+            // Optimization: Break out of BOTH loops once found
+            for (int row = 0; row < BOARD_SIZE; ++row) 
+            {
+                for (int column = 0; column < BOARD_SIZE; ++column) 
+                {
+                    if (board[row][column] != '0') 
+                    {
+                        opponentColumn = column;
+                        opponentRow = row;
+                        goto foundOpponent; // Cleanest way to break nested loop in C++
+                    }
+                }
+            }
+            
+            foundOpponent:
+
+            if (opponentColumn != -1) 
+            { 
+                // We define the "Strong Core" as Indices 2-8 (Rows/Cols 3-9).
+                bool inStrongBox = (opponentColumn >= 2 && opponentColumn <= 8) && 
+                                   (opponentRow >= 2 && opponentRow <= 8);
+
+                bool isObtuse = (opponentColumn == 0 && opponentRow == 10) || (opponentColumn == 10 && opponentRow == 0);
+
+                if (inStrongBox || isObtuse) 
+                {
+                    cerr << "Swap Strategy: Opponent move (" << opponentColumn << "," << opponentRow << ") is Strong (Red Zone). SWAPPING." << endl;
+                    cout << "SWAP" << endl;
+                    return {-1, -1};
+                } 
+                else 
+                {
+                     cerr << "Swap Strategy: Opponent move (" << opponentColumn << "," << opponentRow << ") is Fair/Weak. KEEPING." << endl;
+                }
+            }
+        }
+    }
+
     // Caclulate time allocation
     double timeToSpend = timeMgr.engage(moveCount);
     
