@@ -85,8 +85,9 @@ MCTS::SearchResult MCTS::runSearch(int timeLimitMs)
     int iterations = 0;
     while (true)
     {
-        // Check time every 1024 iterations to minimize overhead
-        if ((iterations & 1023) == 0)
+        // Check time every 64 iterations to minimize overhead
+        // 1024 was too infrequent for heavy rollouts, leading to timeouts.
+        if ((iterations & 63) == 0)
         {
             auto currentTime = chrono::high_resolution_clock::now();
             auto elapsed = chrono::duration_cast<chrono::milliseconds>(currentTime - startTime).count();

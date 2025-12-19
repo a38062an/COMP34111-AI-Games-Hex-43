@@ -1,0 +1,10 @@
+GameNum,WinnerName,Agent1,Agent2,Agent1Time,Agent2Time,TotalTurns,Agent1TimePerTurn,Agent2TimePerTurn,WinMethod,TimeLimit
+1,ExpAgent_Red,ExpAgent_Red,ExpAgent_Blue,32.326,29.957,25,0.000,0.000,WIN,50000
+2,ExpAgent_Blue,ExpAgent_Red,ExpAgent_Blue,32.330,34.520,27,0.000,0.000,WIN,50000
+3,ExpAgent_Red,ExpAgent_Red,ExpAgent_Blue,32.326,29.954,25,0.000,0.000,WIN,50000
+4,ExpAgent_Blue,ExpAgent_Red,ExpAgent_Blue,29.954,32.326,25,0.000,0.000,WIN,50000
+5,ExpAgent_Red,ExpAgent_Red,ExpAgent_Blue,32.327,29.954,25,0.000,0.000,WIN,50000
+6,ExpAgent_Blue,ExpAgent_Red,ExpAgent_Blue,29.954,32.328,25,0.000,0.000,WIN,50000
+7,ExpAgent_Red,ExpAgent_Red,ExpAgent_Blue,34.518,32.328,27,0.000,0.000,WIN,50000
+8,ExpAgent_Blue,ExpAgent_Red,ExpAgent_Blue,34.522,36.534,29,0.000,0.000,WIN,50000
+1,Exp_R,Exp_R,Exp_B,115.060,105.758,25,0.000,0.000,WIN,180.000
