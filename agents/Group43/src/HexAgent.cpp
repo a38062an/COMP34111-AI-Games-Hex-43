@@ -1,4 +1,5 @@
 #include "HexAgent.h"
+#include "HSearch.h"
 #include <sstream>
 #include <iostream>
 #include <algorithm> // for max, min
@@ -194,7 +195,15 @@ Point HexAgent::makeMove()
         }
     }
 
-    // Caclulate time allocation
+    // Tactical Solver: Check for forced wins
+    auto forcedWin = HSearch::findForcedWin(bitboard, myColour);
+    if (forcedWin)
+    {
+        pair<int, int> move = forcedWin.value();
+        return {move.first, move.second};
+    }
+
+    // Calculate time allocation
     double timeToSpend = timeMgr.engage(moveCount);
     
     // Log choice
@@ -206,7 +215,7 @@ Point HexAgent::makeMove()
     
     // Start Timer
     auto start = std::chrono::high_resolution_clock::now();
-    
+
     // We pass timeToSpend. MCTS needs to respect this strictly.
     MCTS::SearchResult result = mcts.runSearch((int)timeToSpend);
     

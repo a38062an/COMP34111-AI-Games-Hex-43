@@ -27,7 +27,7 @@ class Bitboard
 {
 private:
     // Static lookup table, shared by ALL Bitboards
-    inline static array<AdjacencyList, NUM_TILES> ADJACENCY;
+    static array<AdjacencyList, NUM_TILES> ADJACENCY;
 
 public:
     bitset<NUM_TILES> red;  ///< Bitset for Red pieces (1 = occupied by Red)
@@ -64,8 +64,8 @@ public:
     /**
      * @brief Construct a new empty Bitboard.
      */
-    Bitboard()
-    {
+    Bitboard() {
+        initTables();
         red.reset();
         blue.reset();
     }
