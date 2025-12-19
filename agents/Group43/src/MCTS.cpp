@@ -1,6 +1,7 @@
 #include "MCTS.h"
 #include <cstdlib>
 #include <random>
+#include "HSearch.h"
 
 using namespace std;
 
@@ -10,6 +11,9 @@ MCTS::ZobristHasher MCTS::hasher;
 
 // Global node counter for benchmarking
 long long g_nodeCount = 0;
+
+// Depth for H-Search filtering
+int hSearchDepth = 1;
 
 MCTS::ZobristHasher::ZobristHasher()
 {
@@ -70,6 +74,16 @@ MCTS::SearchResult MCTS::runSearch(int timeLimitMs)
     
     // Root Creation
     Node *root = new Node(255, getOpponent(myColour), nullptr, rootBoard, rootHash);
+
+    // Find strong and normal moves using H-Search
+    bitset<NUM_TILES> strongMovesMask;
+    bitset<NUM_TILES> normalMovesMask;
+
+    HSearch::filterMoves(rootBoard, myColour, hSearchDepth, strongMovesMask, normalMovesMask);
+
+    // Store strong/normal moves in root
+    root->strongMoves = strongMovesMask;
+    root->normalMoves = normalMovesMask;
 
     // Check TT for root
     double wins;
@@ -170,9 +184,22 @@ Node *MCTS::expand(Node *node, Bitboard &board)
     // 2. Candidates are: (NOT Occupied) AND (NOT Already Expanded)
     bitset<NUM_TILES> candidates = ~occupied & ~node->expandedMoves;
 
+    bitset<NUM_TILES> strongCandidates = candidates & node->strongMoves;
+    bitset<NUM_TILES> normalCandidates = candidates & node->normalMoves;
+
+    bitset<NUM_TILES>& pool = candidates;
+    if (strongCandidates.any())
+    {
+        pool = strongCandidates;
+    }
+    else if (normalCandidates.any())
+    {
+        pool = normalCandidates;
+    }
+
     // 3. Pick a random valid move from the candidates
     // We want the k-th set bit, where k is a random number between 0 and candidate_count.
-    int count = candidates.count();
+    int count = pool.count();
     if (count == 0)
         return nullptr; // Should not happen if remainingMoves > 0
 
@@ -186,7 +213,7 @@ Node *MCTS::expand(Node *node, Bitboard &board)
     // (This loops 121 times max, but usually much less. Average case is fast.)
     for (int i = 0; i < NUM_TILES; ++i)
     {
-        if (candidates.test(i))
+        if (pool.test(i))
         {
             if (currentBit == pick)
             {
@@ -212,8 +239,6 @@ Node *MCTS::expand(Node *node, Bitboard &board)
     uint64_t newHash = hasher.updateHash(node->hash, moveIndex, childColour);
 
     Node *child = new Node(moveIndex, childColour, node, board, newHash);
-    
-
 
     double wins;
     int visits;
@@ -243,7 +268,7 @@ MCTS::SimulationResult MCTS::simulate(Bitboard board, char turnColour)
         }
     }
 
-    // 2. Play random moves untill the board is full
+    // 2. Play random moves until the board is full
     // We do NOT check for a winner here. Speed is the only goal.
     while (movesCount > 0)
     {

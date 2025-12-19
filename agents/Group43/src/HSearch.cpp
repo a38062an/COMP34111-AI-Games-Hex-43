@@ -2,6 +2,7 @@
 
 using namespace std;
 
+// For HexAgent: Find a forced winning move
 experimental::optional<pair<int,int>> HSearch::findForcedWin(
     const Bitboard &board,
     char player
@@ -22,67 +23,129 @@ experimental::optional<pair<int,int>> HSearch::findForcedWin(
     return experimental::nullopt;
 }
 
+// For MCTS: Filter moves into strong and normal using H-Search
+void HSearch::filterMoves(
+    const Bitboard& board,
+    char player,
+    int depth,
+    bitset<NUM_TILES>& strong,
+    bitset<NUM_TILES>& normal
+) {    
+    strong.reset();
+    normal.reset();
+
+    for (int i = 0; i < NUM_TILES; ++i) {
+        int x = i % BOARD_SIZE;
+        int y = i / BOARD_SIZE;
+
+        if (board.isOccupied(x, y))
+            continue;
+
+        Bitboard next = board;
+        next.set(x, y, player);
+
+        // Hard filter: immediate opponent win
+        char opponent = (player == 'R') ? 'B' : 'R';
+        if (hasDirectConnection(next, opponent)) continue;
+
+        // Soft signal: bounded VC
+        if (createsVCUpToDepth(board, player, x, y, depth)) {
+            strong.set(i);
+        } else {
+            normal.set(i);
+        }
+    }
+}
+
+// Returns true if the player has a direct connection
 bool HSearch::hasDirectConnection(Bitboard board, char player)
 {
     if (player == 'R') return board.checkWinRed();
     else return board.checkWinBlue();
 }
 
-bool HSearch::hasSimpleBridge(const Bitboard& board, char player)
-{
-    for (int ay = 0; ay < BOARD_SIZE; ++ay)
-    {
-        for (int ax = 0; ax < BOARD_SIZE; ++ax)
-        {
-            if (board.get(ax, ay) != player)
-                continue;
+// Returns true if placing at (x,y) creates a VC up to given depth
+bool HSearch::createsVCUpToDepth(
+    const Bitboard& board,
+    char player,
+    int x, int y,
+    int depth
+) {
+    Bitboard next = board;
+    next.set(x, y, player);
 
-            for (int by = 0; by < BOARD_SIZE; ++by) {
-                for (int bx = 0; bx < BOARD_SIZE; ++bx)
-                {
-                    if (bx == ax && by == ay) continue;
-                    if (board.get(bx, by) != player) continue;
-                    if (simpleBridgeBetween(board, ax, ay, bx, by)) return true;
-                }
-            }
-        }
-    }
-    return false;
-}
-
-bool HSearch::hasVirtualConnection(const Bitboard& board, char player) {
-    unordered_map<uint64_t,bool> memo;
-
-    // collect all stones
+    // Collect player stones
     vector<pair<int,int>> stones;
-    for (int y = 0; y < BOARD_SIZE; ++y)
-        for (int x = 0; x < BOARD_SIZE; ++x)
-            if (board.get(x,y) == player)
-                stones.emplace_back(x,y);
+    for (int yy = 0; yy < BOARD_SIZE; ++yy)
+        for (int xx = 0; xx < BOARD_SIZE; ++xx)
+            if (next.get(xx, yy) == player)
+                stones.emplace_back(xx, yy);
 
-    // check all pairs
-    for (size_t i = 0; i < stones.size(); ++i)
-    {
-        for (size_t j = i+1; j < stones.size(); ++j)
-        {
-            int ax = stones[i].first;
-            int ay = stones[i].second;
-            int bx = stones[j].first;
-            int by = stones[j].second;
+    // Check whether the new stone participates in any VC
+    for (auto& stone : stones) {
+        int sx = stone.first;
+        int sy = stone.second;
+        if (sx == x && sy == y) continue;
 
-            if (vcRecursive(board, player, ax,ay, bx,by, memo)) return true;
+        if (vcBoundedBetween(next, player, x, y, sx, sy, depth))
+            return true;
+    }
+
+    return false;
+}
+
+// Returns true if there is a VC bounded between a and b up to given depth
+bool HSearch::vcBoundedBetween(
+    const Bitboard& board,
+    char player,
+    int ax, int ay,
+    int bx, int by,
+    int depth
+) {
+    // Base cases
+    if (areAdjacent(ax, ay, bx, by)) return true;
+
+    if (simpleBridgeBetween(board, ax, ay, bx, by)) return true;
+
+    if (depth == 0) return false;
+
+    // AND rule (bounded)
+    for (int cy = 0; cy < BOARD_SIZE; ++cy) {
+        for (int cx = 0; cx < BOARD_SIZE; ++cx) {
+
+            if (board.get(cx, cy) != player) continue;
+
+            if ((cx == ax && cy == ay) || (cx == bx && cy == by)) continue;
+
+            // Locality pruning
+            if (abs(cx - ax) > 3 || abs(cy - ay) > 3) continue;
+
+            if (vcBoundedBetween(board, player, ax, ay, cx, cy, depth - 1) &&
+                vcBoundedBetween(board, player, cx, cy, bx, by, depth - 1))
+                return true;
         }
     }
 
     return false;
 }
 
-// TODO: Implement opponentHasForcedWin
-bool HSearch::opponentHasForcedWin(const Bitboard &board, char player)
+// Returns true if a and b are adjacent
+bool HSearch::areAdjacent(int ax, int ay, int bx, int by)
 {
+    static const int neigh[6][2] = {
+        {0, -1}, {1, -1},
+        {-1, 0}, {1,  0},
+        {-1, 1}, {0,  1}
+    };
+
+    for (auto& n : neigh)
+    {
+        if (ax + n[0] == bx && ay + n[1] == by) return true;
+    }
     return false;
 }
 
+// Returns true if there is a simple bridge between a and b
 bool HSearch::simpleBridgeBetween(
     const Bitboard& board,
     int ax, int ay,
@@ -96,21 +159,7 @@ bool HSearch::simpleBridgeBetween(
     return countCommonEmptyNeighbors(board, ax, ay, bx, by) >= 2;
 }
 
-bool HSearch::areAdjacent(int x1, int y1, int x2, int y2)
-{
-    static const int neigh[6][2] = {
-        {0, -1}, {1, -1},
-        {-1, 0}, {1, 0},
-        {-1, 1}, {0, 1}
-    };
-
-    for (auto& n : neigh)
-    {
-        if (x1 + n[0] == x2 && y1 + n[1] == y2) return true;
-    }
-    return false;
-}
-
+// Counts common empty neighbors between a and b
 int HSearch::countCommonEmptyNeighbors(
     const Bitboard& board,
     int ax, int ay,
@@ -129,6 +178,7 @@ int HSearch::countCommonEmptyNeighbors(
     return count;
 }
 
+// Get neighbors of a tile
 vector<pair<int,int>> HSearch::getNeighbors(int x, int y)
 {
     static const int neigh[6][2] = {
@@ -149,67 +199,4 @@ vector<pair<int,int>> HSearch::getNeighbors(int x, int y)
             result.emplace_back(nx, ny);
     }
     return result;
-}
-
-bool HSearch::vcRecursive(
-    const Bitboard& board,
-    char player,
-    int ax, int ay,
-    int bx, int by,
-    unordered_map<uint64_t,bool>& memo
-) {
-    uint64_t key = pack(ax,ay,bx,by);
-    auto it = memo.find(key);
-    if (it != memo.end()) return it->second;
-
-    // ---- Base cases ----
-
-    // adjacency...
-    if (areAdjacent(ax,ay,bx,by)) {
-        memo[key] = true;
-        return true;
-    }
-
-    // ...OR simple bridge
-    if (simpleBridgeBetween(board, ax,ay, bx,by)) {
-        memo[key] = true;
-        return true;
-    }
-
-    // AND recursion
-
-    // Try intermediate stones C
-    for (int cy = 0; cy < BOARD_SIZE; ++cy) {
-        for (int cx = 0; cx < BOARD_SIZE; ++cx) {
-
-            if (cx == ax && cy == ay) continue;
-            if (cx == bx && cy == by) continue;
-            if (board.get(cx,cy) != player) continue;
-
-            // Pruning: local only
-            if (abs(cx - ax) > 3 || abs(cy - ay) > 3) continue;
-
-            if (vcRecursive(board, player, ax,ay, cx,cy, memo) &&
-                vcRecursive(board, player, cx,cy, bx,by, memo))
-            {
-                memo[key] = true;
-                return true;
-            }
-        }
-    }
-
-    memo[key] = false;
-    return false;
-}
-
-uint64_t HSearch::pack(int ax,int ay,int bx,int by) {
-    // order-independent
-    if (ax > bx || (ax == bx && ay > by)) {
-        swap(ax,bx);
-        swap(ay,by);
-    }
-    return  ((uint64_t)ax << 48)
-          | ((uint64_t)ay << 32)
-          | ((uint64_t)bx << 16)
-          |  (uint64_t)by;
 }

@@ -28,10 +28,9 @@ struct Node
     vector<Node *> children;         
     
     uint64_t hash;                   
-    bitset<NUM_TILES> expandedMoves; 
-
-
-
+    bitset<NUM_TILES> expandedMoves;
+    bitset<NUM_TILES> strongMoves;
+    bitset<NUM_TILES> normalMoves;
     /**
      * @brief Construct a new Node using direct index.
      */
