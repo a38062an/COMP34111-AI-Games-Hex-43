@@ -9,8 +9,8 @@ if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
 # UPDATED: Points to diminishing_returns.csv
-RESULTS_FILE = os.path.join(project_root, "agents/Group43/results/diminishing_returns.csv")
-PLOTS_DIR = os.path.join(project_root, "agents/Group43/plots")
+RESULTS_FILE = os.path.join(project_root, "agents/Group043/results/diminishing_returns.csv")
+PLOTS_DIR = os.path.join(project_root, "agents/Group043/plots")
 
 def ensure_dirs():
     os.makedirs(PLOTS_DIR, exist_ok=True)

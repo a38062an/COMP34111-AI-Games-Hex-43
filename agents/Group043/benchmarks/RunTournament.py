@@ -13,7 +13,7 @@ if project_root not in sys.path:
 from src.Colour import Colour
 from src.GameOptimised import Game
 from src.Player import Player
-from agents.Group43.Agents import BaselineAgent, ExperimentalAgent
+from agents.Group043.Agents import BaselineAgent, ExperimentalAgent
 
 def run_tournament(num_games, verbose=False):
     baseline_wins = 0

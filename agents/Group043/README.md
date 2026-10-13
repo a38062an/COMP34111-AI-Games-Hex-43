@@ -1,117 +1,68 @@
 # Group 43 Hex Agent
 
-A high-performance Hybrid Hex Agent implemented in C++. The architecture is modeled after the world-champion program **MoHex 2.0**, integrating Monte Carlo Tree Search (MCTS) with RAVE, tactical pruning, and neural network policy guidance.
+A C++17 **Monte Carlo Tree Search** agent for 11×11 Hex, with RAVE, a Zobrist-hashed transposition table, pattern-weighted ("heavy") playouts, opening and swap heuristics, and dynamic time management. A thin Python wrapper connects it to the course's game engine.
 
-## 1. Quick Start
+## Architecture
 
-### Prerequisites
+```text
+Hex.py / HexTournament.py  (course engine, Python)
+        │  Agents.py: spawns the binary, sends one line per turn:
+        │  "START|CHANGE|SWAP;<last move>;<board rows>;<turn>;"
+        ▼
+bin/CppAgent  (C++)
+  CppAgent.cpp   entry point: ./CppAgent <R|B> <board_size> <time_limit_ms>
+  HexAgent.cpp   protocol parsing, opening/swap logic, time management
+  MCTS.cpp/.h    search: UCT + RAVE, transposition table, heavy playouts
+  Node.h         tree node (1-byte move index, expanded-move bitset, UCT/RAVE stats)
+  Bitboard.h     two std::bitset<121> boards, precomputed adjacency, flood-fill win check
+  PatternWeights.h  4096-entry local-pattern weight table for playouts
+```
 
-- GCC Compiler (C++17 support)
-- Python 3.x
-- Make
+### Search (`MCTS.cpp`)
 
-### Compilation
+- **Selection:** UCT (c = 1.414) blended with RAVE/AMAF values. The blend weight is β = √(k / (3n + k)) with k = 1000, so RAVE dominates early and UCT takes over as visits grow.
+- **Expansion:** picks one untried move at random from the bitset `~(red | blue) & ~expanded`.
+- **Transposition table:** 1M entries, keyed by an incrementally updated **Zobrist hash**. New nodes start from cached win and visit counts, so knowledge is shared across transpositions. The table is static and persists across moves in a game.
+- **Heavy playouts:** each candidate move is scored from its 6-neighbour pattern. Each neighbour is empty, own stone, or opponent stone/wall, encoded in 2 bits, giving a 12-bit index into a 4096-entry weight table. Playouts use rejection sampling: up to 4 random candidates, each accepted with probability `weight / 255`. Bridge-like and connecting shapes are therefore preferred over uniformly random moves. Playouts fill the board, since Hex has no draws, and record each side's moves for the RAVE update.
+- **Move choice:** the most-visited root child once the time budget runs out. The clock is checked every 64 iterations.
 
-The agent is written in C++ for performance and must be compiled before use. Running Hex.py will do this compilcaition automatically, but it can also be done explicitly.
+### Game logic (`HexAgent.cpp`)
+
+- **Opening (Red):** plays one of three known "fair" opening cells, so the opponent gains little from swapping.
+- **Swap decision (Blue, move 1):** swaps if Red's opening stone lands in the strong central 7×7 region or an obtuse corner.
+- **Time management:**
+  - 1 s per move for the first 4 moves.
+  - After that, `(remaining − 1.5 s reserve) / expected moves left × 2.3`, with about 30 moves expected per player.
+  - Capped at 50% of the remaining budget and floored at 100 ms.
+  - Time actually spent is measured and subtracted from the budget.
+
+## Build and run
+
+From the repository root (inside the course Docker image, or any Linux/macOS machine with g++ and Python 3.10+):
 
 ```bash
-# Compile the agent binary
-make
+make -C agents/Group043                 # -> agents/Group043/bin/CppAgent  (-O3 -march=native -flto)
+
+# Play against the course's naive agent
+python3 Hex.py -p1 "agents.Group043.Agents FinalAgent" -p2 "agents.DefaultAgents.NaiveAgent NaiveAgent" -v
 ```
 
-This produces the `CppAgent` binary in `bin/`.
+`cmd.txt` registers `FinalAgent` (30 s total time budget) for `HexTournament.py`. `BaselineAgent` and `ExperimentalAgent` (built by `make dev` as `bin/DevAgent`) are used to compare a feature branch against `main`.
 
-### Running the Agent
+## Benchmarks
 
-The agent communicates via standard I/O and is designed to run via the `Hex.py` tournament runner.
+| Tool | Purpose |
+|---|---|
+| `benchmarks/RunSPS.sh` → `SPS.cpp` | Raw search speed: MCTS simulations per second from the empty board (5 s run after a warm-up) |
+| `benchmarks/RunTournament.sh` | Builds `main` as the baseline and the current branch as the dev agent (stashing local changes), then plays N games between them |
+| `benchmarks/OneVsOne.py` | Head-to-head series between any two agent classes, alternating colours, with CSV logging |
+| `benchmarks/benchmark_diminishing_results.py`, `plot_diminishing_results.py` | Win rate and actual time used as the total time budget varies, against a fixed-budget baseline. Results are in `plots/` |
 
-1.  **Register the Agent:**
-    Ensure `agents/Group43/cmd.txt` exists and contains:
-    ```plaintext
-    agents.Group43.Group43Agent Group43Agent
-    ```
-2.  **Run against a Random Bot:**
-    ```bash
-    python3 Hex.py -p1 "agents.Group43.Agents BaselineAgent" -p2 "agents.DefaultAgents.NaiveAgent NaiveAgent" -b 11 -v
-    ```
-3.  **Run Self-Play:**
-    ```bash
-    python3 Hex.py -p1 "agents.Group43.Agents BaselineAgent" -p2 "agents.Group43.Agents ExperimentalAgent" -b 11 -v
-    ```
+## Contributors
 
-## 2. System Architecture
+Built by Group 43. On `main`:
 
-The system follows a modular Controller-Brain-Data architecture designed to support the Hybrid MCTS approach outlined in our project proforma.
+- **Anthony Nguyen:** the core MCTS/RAVE/transposition-table engine.
+- **Alex Mote:** the heavy pattern-based playouts, the bitboard and engine performance work, and the SPS and tournament benchmarking tools.
 
-### Core Components
-
-| Component          | File              | Role                                                                                                            |
-| :----------------- | :---------------- | :-------------------------------------------------------------------------------------------------------------- |
-| **Infrastructure** | `Group43Agent.py` | Python wrapper. Spawns the C++ subprocess and translates the engine's text protocol.                            |
-| **Entry Point**    | `CppAgent.cpp`    | Parses command line arguments and instantiates the HexAgent.                                                    |
-| **Controller**     | `HexAgent.cpp`    | Manages the game loop, protocol parsing, time management, and the Pie Rule (Swap).                              |
-| **The Brain**      | `MCTS.cpp`        | The core search engine. Currently implements MCTS + RAVE. Designed to integrate with Neural Policy in Phase 2.  |
-| **Data Layer**     | `Bitboard.h`      | An efficient 11x11 board representation using `std::bitset` for $O(1)$ operations and fast connectivity checks. |
-| **Memory**         | `Node.h`          | Custom memory-pooled tree nodes for high-performance expansion.                                                 |
-
-### Data Flow: "The Life of a Move"
-
-1.  **Input:** The Python engine sends a protocol string (e.g., `CHANGE;5,5;...`) to stdin.
-2.  **Update:** `HexAgent` parses the string and updates the persistent Master Bitboard.
-3.  **Instantiation:** A new MCTS instance is created, initialized with a copy of the Master Bitboard.
-4.  **Search:** `MCTS::runSearch` executes the 4-phase loop (Selection, Expansion, Simulation, Backpropagation).
-    - **Current Optimization:** Uses RAVE (Rapid Action Value Estimation) to accelerate learning.
-    - **Planned Integration:** Will query CNN Policy for move priors and H-Search for tactical pruning.
-5.  **Output:** The best move is calculated, returned to `HexAgent`, and printed to stdout.
-
-## 3. Project Roadmap & Division of Labor
-
-Our development follows the Proforma strategy, dividing the Hybrid MoHex architecture into distinct streams.
-
-1.  **✅ Phase 1: Corwhe Engine (Anthony)**
-
-    - **Status:** Completed
-    - **Feature:** High-performance MCTS loop.
-    - **Feature:** RAVE (Rapid Action Value Estimation) algorithm implementation.
-    - **Optimization:** Tree structure optimization (Memory Pools, Transposition Tables).
-
-2.  **🚧 Phase 2: Tactical Solver (Joshua)**
-
-    - **Status:** In Progress
-    - **Feature:** H-Search algorithm for virtual connections.
-    - **Feature:** Deterministic pruning of solved sub-problems (e.g., Bridges, forced wins).
-
-3.  **🚧 Phase 3: Simulation Strategy (Alex)**
-
-    - **Status:** In Progress
-    - **Feature:** Pattern-based playouts to replace random rollouts.
-    - **Goal:** Fast lookup of 3x3 local patterns to guide simulations.
-
-4.  **🔮 Phase 4: Neural Policy (Alexios)**
-    - **Status:** Planned
-    - **Feature:** Deep Convolutional Neural Network (CNN) trained on expert games.
-    - **Goal:** Provide move priors to reduce the effective branching factor.
-
-## 4. Directory Structure
-
-```plaintext
-agents/Group43/
-├── cmd.txt                 # Entry point definition for tournament runner
-├── Group43Agent.py         # Python Wrapper
-├── README.md               # This file
-├── Makefile                # Build script
-├── src/                    # C++ Source Code
-│   ├── CppAgent.cpp        # Main Entry Point
-│   ├── HexAgent.cpp        # Controller Logic
-│   ├── MCTS.cpp            # Search Logic (RAVE + MCTS)
-│   ├── Bitboard.h          # Board Representation
-│   └── Node.h              # Tree Node Structure (Memory Pool)
-├── bin/                    # Compiled C++ binaries
-├── results/                # Results of our experiments
-│   ├── logs                # Benchmarking Logs
-│   └── plots               # Plots for evaluation
-└── experiments/            # Benchmarking Tools
-    ├── run_experiments.sh  # Bash script to run experiments
-    ├── plot_experiments.py # Python script to create plots
-    └── Experiment.cpp      # Performance testing runner
-```
+A CNN policy network and an H-search virtual-connection solver were prototyped on other branches (`CNN*`, `VC*`) and were not merged into the final agent.

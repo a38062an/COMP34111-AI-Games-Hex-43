@@ -27,7 +27,7 @@ def run_tournament(num_games, agent1_path, agent2_path, time_limit_ms=None, verb
     Agent1Class = get_class(agent1_path)
     Agent2Class = get_class(agent2_path)
 
-    # Use short names for display (e.g. "BaselineAgent" from "agents.Group43.Agents.BaselineAgent")
+    # Use short names for display (e.g. "BaselineAgent" from "agents.Group043.Agents.BaselineAgent")
     name1 = name1_override if name1_override else agent1_path.split(".")[-1]
     name2 = name2_override if name2_override else agent2_path.split(".")[-1]
 
@@ -172,8 +172,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run a tournament between two agents.")
     parser.add_argument("games", type=int, nargs='?', default=1, help="Number of games to play")
     parser.add_argument("--games", type=int, dest="games_opt", help="Number of games (optional flag)")
-    parser.add_argument("--agent1", type=str, default="agents.Group43.Agents.BaselineAgent", help="Class path for Agent 1")
-    parser.add_argument("--agent2", type=str, default="agents.Group43.Agents.ExperimentalAgent", help="Class path for Agent 2")
+    parser.add_argument("--agent1", type=str, default="agents.Group043.Agents.BaselineAgent", help="Class path for Agent 1")
+    parser.add_argument("--agent2", type=str, default="agents.Group043.Agents.ExperimentalAgent", help="Class path for Agent 2")
     parser.add_argument("--name1", type=str, default=None, help="Display name for Agent 1")
     parser.add_argument("--name2", type=str, default=None, help="Display name for Agent 2")
     parser.add_argument("--time_limit_ms", type=int, default=None, help="Time limit per player in ms")

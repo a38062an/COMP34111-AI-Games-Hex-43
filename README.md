@@ -1,41 +1,31 @@
-# COMP34120 AI and Games Coursework - Group 43
+# COMP34111 AI and Games: Hex Agent (Group 43)
 
-This repository contains the coursework submission for Group 43.
+Group 43's coursework agent for 11×11 [Hex](https://en.wikipedia.org/wiki/Hex_(board_game)) with the swap (pie) rule, built on the course-provided Python game engine and tournament runner.
 
-## Agent Information
-The source code for our agent is located in `agents/Group043`.
+**Our agent is in [`agents/Group043/`](agents/Group043/).** It is a C++ Monte Carlo Tree Search engine with RAVE, a Zobrist transposition table, pattern-weighted playouts and dynamic time management. See [its README](agents/Group043/README.md) for the architecture, build steps and benchmarks.
 
-Please refer to `agents/Group043/README.md` for detailed documentation regarding the agent's architecture, build instructions, and strategy.
+## Repository layout
 
-## Environment Setup
-We will be running each agent within a specific Docker environment. Ensure your agent works within this container and adheres to the specified constraints.
+| Path | Contents |
+|---|---|
+| `agents/Group043/` | Our agent: C++ engine, Python wrapper, benchmarks |
+| `Hex.py` | Run a single game between two agents |
+| `HexTournament.py` | Round-robin tournament across every `agents/Group*/cmd.txt` |
+| `src/` | Course game engine (board, rules, move validation, timing) |
+| `agents/DefaultAgents/`, `agents/MCTSAgent/`, `agents/TestAgents/`, `agents/Group{1,2,997,998,999}/` | Course-provided reference and test agents (naive, cheating, crashing, external process) |
+| `test/` | Engine unit tests |
+| `Dockerfile` | Course evaluation environment (Python 3.11, 8 CPUs / 8 GB) |
+| `Hex game doc.pdf` | Course specification of the game and the agent protocol |
 
-### Building the Docker Image
-To build the Docker image:
+## Quick start
 
 ```bash
+# Optional: run inside the evaluation container
 docker build --build-arg UID=$UID -t hex .
-```
+docker run --cpus=8 --memory=8G -v "$(pwd)":/home/hex --rm -it hex /bin/bash
 
-### Running the Container
-To run the container:
-
-```bash
-docker run --cpus=8 --memory=8G -v "$(pwd)":/home/hex --name hex --rm -it hex /bin/bash
-```
-The current repository will be mapped to `/home/hex` within the container.
-
-### Running a Game
-To run a game of Hex:
-
-```bash
-python3 Hex.py
-```
-By default, two `agents/DefaultAgents/NaiveAgent.py` agents will play against each other. Use `python3 Hex.py --help` to see all available options.
-
-## Testing
-To run the test suite:
-
-```bash
-python3 -m unittest discover
+make -C agents/Group043
+python3 Hex.py -p1 "agents.Group043.Agents FinalAgent" -p2 "agents.DefaultAgents.NaiveAgent NaiveAgent" -v
+python3 HexTournament.py            # writes game_results_*.csv / game_stat_*.csv
+python3 -m unittest discover        # engine tests
 ```

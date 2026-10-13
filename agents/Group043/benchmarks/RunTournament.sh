@@ -6,7 +6,7 @@ cd "$(dirname "$0")/../../.." || exit 1
 
 # 2. Configuration
 GAMES=${1:-50}        # Default to 50 games if not specified
-AGENT_DIR="agents/Group43"
+AGENT_DIR="agents/Group043"
 
 # 3. Store Current State (Safety Mechanism)
 CURRENT_BRANCH=$(git branch --show-current)

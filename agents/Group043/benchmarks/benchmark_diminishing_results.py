@@ -14,8 +14,8 @@ from src.Player import Player
 from src.Colour import Colour
 
 # Constants
-RESULTS_DIR = os.path.join(project_root, "agents/Group43/results")
-PLOTS_DIR = os.path.join(project_root, "agents/Group43/plots")
+RESULTS_DIR = os.path.join(project_root, "agents/Group043/results")
+PLOTS_DIR = os.path.join(project_root, "agents/Group043/plots")
 
 def ensure_dirs():
     """Ensure output directories exist."""
@@ -28,7 +28,7 @@ def run_game_internal(test_time, baseline_time, swap_sides):
     If swap_sides is False: TestAgent (Red) vs Baseline (Blue)
     If swap_sides is True:  Baseline (Red) vs TestAgent (Blue)
     """
-    import agents.Group43.Agents as Agents
+    import agents.Group043.Agents as Agents
     importlib.reload(Agents) 
     
     if not swap_sides:

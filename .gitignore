@@ -191,8 +191,19 @@ game.log
 .vscode/
 
 # LibTorch
-agents/Group43/src/libtorch/
+agents/Group043/src/libtorch/
 libtorch/
 
 # macOS
 .DS_Store
+
+# Shell history / local caches
+.bash_history
+
+# Tournament outputs (HexTournament.py)
+game_results_*.csv
+game_stat_*.csv
+all_game_logs_*/
+
+# Compiled agent binaries
+agents/Group043/bin/
